@@ -60,6 +60,7 @@ unavailable - #8978 by @IKarbowiak
 - Update required permissions for attribute options - #9204 by @IKarbowiak
   - Product attribute options can be fetched by requestors with manage product types and attributes permission.
   - Page attribute options can be fetched by requestors with manage page types and attributes permission.
+- Filter Customer/Order/Sale/Product/ProductVariant by datetime of last modification - #9137 by @rafalp
 
 
 # 3.0.0
