@@ -10,6 +10,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Don't run plugins when calculating checkout's total price for available shipping methods resolution - #9121 by @rafalp
   - Use either net or gross price depending on store configuration.
 
+- Remove `graphene-federation` dependency - #9184 by @rafalp
 
 ## Other
 
