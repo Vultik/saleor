@@ -6,7 +6,6 @@ from typing import List, Optional
 import graphene
 from django_countries.fields import Country
 from graphene import relay
-from graphene_federation import key
 
 from ....attribute import models as attribute_models
 from ....core.permissions import (
@@ -53,7 +52,7 @@ from ...core.descriptions import (
     PREVIEW_FEATURE,
 )
 from ...core.enums import ReportingPeriod
-from ...core.federation import resolve_federation_references
+from ...core.federation import federated_entity, resolve_federation_references
 from ...core.fields import ConnectionField, FilterConnectionField
 from ...core.types import (
     Image,
@@ -218,7 +217,7 @@ class PreorderData(graphene.ObjectType):
         return root.global_sold_units
 
 
-@key(fields="id channel")
+@federated_entity("id channel")
 class ProductVariant(ChannelContextTypeWithMetadata, ModelObjectType):
     id = graphene.GlobalID(required=True)
     name = graphene.String(required=True)
@@ -721,7 +720,7 @@ class ProductVariantCountableConnection(CountableConnection):
         node = ProductVariant
 
 
-@key(fields="id channel")
+@federated_entity("id channel")
 class Product(ChannelContextTypeWithMetadata, ModelObjectType):
     id = graphene.GlobalID(required=True)
     seo_title = graphene.String()
@@ -1197,7 +1196,7 @@ class ProductCountableConnection(CountableConnection):
         node = Product
 
 
-@key(fields="id")
+@federated_entity("id")
 class ProductType(ModelObjectType):
     id = graphene.GlobalID(required=True)
     name = graphene.String(required=True)
@@ -1366,7 +1365,7 @@ class ProductTypeCountableConnection(CountableConnection):
         node = ProductType
 
 
-@key(fields="id channel")
+@federated_entity("id channel")
 class Collection(ChannelContextTypeWithMetadata, ModelObjectType):
     id = graphene.GlobalID(required=True)
     seo_title = graphene.String()
@@ -1481,7 +1480,7 @@ class CollectionCountableConnection(CountableConnection):
         node = Collection
 
 
-@key(fields="id")
+@federated_entity("id")
 class Category(ModelObjectType):
     id = graphene.GlobalID(required=True)
     seo_title = graphene.String()
@@ -1600,7 +1599,7 @@ class CategoryCountableConnection(CountableConnection):
         node = Category
 
 
-@key(fields="id")
+@federated_entity("id")
 class ProductMedia(ModelObjectType):
     id = graphene.GlobalID(required=True)
     sort_order = graphene.Int()
