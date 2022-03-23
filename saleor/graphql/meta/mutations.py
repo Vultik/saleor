@@ -174,8 +174,8 @@ class BaseMetadataMutation(BaseMutation):
 
     @classmethod
     def mutate(cls, root, info, **data):
-        type_name, object_pk = cls.get_object_type_name_and_pk(data)
         try:
+            type_name, object_pk = cls.get_object_type_name_and_pk(data)
             permissions = cls.get_permissions(info, type_name, object_pk, **data)
         except GraphQLError as e:
             error = ValidationError(
@@ -184,8 +184,10 @@ class BaseMetadataMutation(BaseMutation):
             return cls.handle_errors(error)
         except ValidationError as e:
             return cls.handle_errors(e)
+
         if not cls.check_permissions(info.context, permissions):
             raise PermissionDenied(permissions=permissions)
+
         try:
             result = super().mutate(root, info, **data)
             if not result.errors:
@@ -330,7 +332,7 @@ class UpdatePrivateMetadata(BaseMetadataMutation):
         )
         input = graphene.List(
             graphene.NonNull(MetadataInput),
-            description=("Fields required to update the object's metadata."),
+            description="Fields required to update the object's metadata.",
             required=True,
         )
 
