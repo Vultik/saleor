@@ -8,6 +8,54 @@ from .....webhook.event_types import WebhookEventAsyncType
 from ...tasks import create_deliveries_for_subscriptions, logger
 
 
+def test_category_created(category, subscription_category_created_webhook):
+    # given
+    webhooks = [subscription_category_created_webhook]
+    event_type = WebhookEventAsyncType.CATEGORY_CREATED
+    category_id = graphene.Node.to_global_id("Category", category.id)
+
+    # when
+    deliveries = create_deliveries_for_subscriptions(event_type, category, webhooks)
+
+    # then
+    expected_payload = json.dumps([{"category": {"id": category_id}, "meta": None}])
+    assert deliveries[0].payload.payload == expected_payload
+    assert len(deliveries) == len(webhooks)
+    assert deliveries[0].webhook == webhooks[0]
+
+
+def test_category_updated(category, subscription_category_updated_webhook):
+    # given
+    webhooks = [subscription_category_updated_webhook]
+    event_type = WebhookEventAsyncType.CATEGORY_UPDATED
+    category_id = graphene.Node.to_global_id("Category", category.id)
+
+    # when
+    deliveries = create_deliveries_for_subscriptions(event_type, category, webhooks)
+
+    # then
+    expected_payload = json.dumps([{"category": {"id": category_id}, "meta": None}])
+    assert deliveries[0].payload.payload == expected_payload
+    assert len(deliveries) == len(webhooks)
+    assert deliveries[0].webhook == webhooks[0]
+
+
+def test_category_deleted(category, subscription_category_deleted_webhook):
+    # given
+    webhooks = [subscription_category_deleted_webhook]
+    event_type = WebhookEventAsyncType.CATEGORY_DELETED
+    category_id = graphene.Node.to_global_id("Category", category.id)
+
+    # when
+    deliveries = create_deliveries_for_subscriptions(event_type, category, webhooks)
+
+    # then
+    expected_payload = json.dumps([{"category": {"id": category_id}, "meta": None}])
+    assert deliveries[0].payload.payload == expected_payload
+    assert len(deliveries) == len(webhooks)
+    assert deliveries[0].webhook == webhooks[0]
+
+
 def test_product_created(product, subscription_product_created_webhook):
     webhooks = [subscription_product_created_webhook]
     event_type = WebhookEventAsyncType.PRODUCT_CREATED
@@ -479,6 +527,27 @@ def test_create_deliveries_for_subscriptions_unsubscribable_event(
 
     mocked_logger.assert_called_with(
         "Skipping subscription webhook. Event %s is not subscribable.", event_type
+    )
+    assert len(deliveries) == 0
+
+
+@patch("saleor.graphql.webhook.subscription_payload.get_default_backend")
+@patch.object(logger, "warning")
+def test_create_deliveries_for_subscriptions_document_executed_with_error(
+    mocked_task_logger,
+    mocked_backend,
+    product,
+    subscription_product_updated_webhook,
+):
+    # given
+    webhooks = [subscription_product_updated_webhook]
+    event_type = WebhookEventAsyncType.ORDER_CREATED
+    mocked_backend.document_from_string.execute.errors = "errors"
+    # when
+    deliveries = create_deliveries_for_subscriptions(event_type, product, webhooks)
+    # then
+    mocked_task_logger.assert_called_with(
+        f"No payload was generated with subscription for event: {event_type}"
     )
     assert len(deliveries) == 0
 
