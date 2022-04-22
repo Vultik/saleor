@@ -6,6 +6,7 @@ All notable, unreleased changes to this project will be documented in this file.
 # Unreleased
 
 ### Breaking changes
+- PREVIEW_FEATURE: replace error code `NOT_FOUND` with `CHECKOUT_NOT_FOUND` for mutation `OrderCreateFromCheckout` - #9569 by @korycins
 - Convert IDs from DB to Graphql format in all notification payloads (email plugins and webhook.NOTIFY)- #9388 by @L3str4nge
 - Migrate order id from int to UUID - #9324 by @IKarbowiak
   - Changed the order `id` changed from `int` to `UUID`, the old ids still can be used
@@ -28,7 +29,7 @@ All notable, unreleased changes to this project will be documented in this file.
   - Store app tokens hashes instead of plain text.
 - Fix filtering product attributes by date range - #9543 by @IKarbowiak
 - Save images to product media from external URLs - #9329 by @krzysztofwolski
-
+- Fix for raising Permission Denied when anonymous user calls `checkout.customer` field - #9573 by @korycins
 
 # 3.1.7
 
