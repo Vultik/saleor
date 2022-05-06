@@ -1351,6 +1351,24 @@ enum WebhookEventTypeEnum {
   """A gift card status is changed."""
   GIFT_CARD_STATUS_CHANGED
 
+  """A new menu created."""
+  MENU_CREATED
+
+  """A menu is updated."""
+  MENU_UPDATED
+
+  """A menu is deleted."""
+  MENU_DELETED
+
+  """A new menu item created."""
+  MENU_ITEM_CREATED
+
+  """A menu item is updated."""
+  MENU_ITEM_UPDATED
+
+  """A menu item is deleted."""
+  MENU_ITEM_DELETED
+
   """A new order is placed."""
   ORDER_CREATED
 
@@ -1469,6 +1487,15 @@ enum WebhookEventTypeEnum {
   TRANSACTION_ACTION_REQUEST
   TRANSLATION_CREATED
   TRANSLATION_UPDATED
+
+  """A new voucher created."""
+  VOUCHER_CREATED
+
+  """A voucher is updated."""
+  VOUCHER_UPDATED
+
+  """A voucher is deleted."""
+  VOUCHER_DELETED
   PAYMENT_AUTHORIZE
   PAYMENT_CAPTURE
   PAYMENT_CONFIRM
@@ -1551,6 +1578,24 @@ enum WebhookEventTypeAsyncEnum {
   """A gift card status is changed."""
   GIFT_CARD_STATUS_CHANGED
 
+  """A new menu created."""
+  MENU_CREATED
+
+  """A menu is updated."""
+  MENU_UPDATED
+
+  """A menu is deleted."""
+  MENU_DELETED
+
+  """A new menu item created."""
+  MENU_ITEM_CREATED
+
+  """A menu item is updated."""
+  MENU_ITEM_UPDATED
+
+  """A menu item is deleted."""
+  MENU_ITEM_DELETED
+
   """A new order is placed."""
   ORDER_CREATED
 
@@ -1669,6 +1714,15 @@ enum WebhookEventTypeAsyncEnum {
   TRANSACTION_ACTION_REQUEST
   TRANSLATION_CREATED
   TRANSLATION_UPDATED
+
+  """A new voucher created."""
+  VOUCHER_CREATED
+
+  """A voucher is updated."""
+  VOUCHER_UPDATED
+
+  """A voucher is deleted."""
+  VOUCHER_DELETED
 }
 
 """Represents app data."""
@@ -1947,6 +2001,9 @@ enum AppExtensionMountEnum {
   NAVIGATION_DISCOUNTS
   NAVIGATION_TRANSLATIONS
   NAVIGATION_PAGES
+  ORDER_DETAILS_MORE_ACTIONS
+  ORDER_OVERVIEW_CREATE
+  ORDER_OVERVIEW_MORE_ACTIONS
 }
 
 """
@@ -2133,6 +2190,12 @@ enum WebhookSampleEventTypeEnum {
   GIFT_CARD_UPDATED
   GIFT_CARD_DELETED
   GIFT_CARD_STATUS_CHANGED
+  MENU_CREATED
+  MENU_UPDATED
+  MENU_DELETED
+  MENU_ITEM_CREATED
+  MENU_ITEM_UPDATED
+  MENU_ITEM_DELETED
   ORDER_CREATED
   ORDER_CONFIRMED
   ORDER_FULLY_PAID
@@ -2178,6 +2241,9 @@ enum WebhookSampleEventTypeEnum {
   TRANSACTION_ACTION_REQUEST
   TRANSLATION_CREATED
   TRANSLATION_UPDATED
+  VOUCHER_CREATED
+  VOUCHER_UPDATED
+  VOUCHER_DELETED
 }
 
 """Represents warehouse."""
@@ -19946,7 +20012,7 @@ type Subscription {
   event: Event
 }
 
-union Event = CategoryCreated | CategoryUpdated | CategoryDeleted | ChannelCreated | ChannelUpdated | ChannelDeleted | ChannelStatusChanged | GiftCardCreated | GiftCardUpdated | GiftCardDeleted | GiftCardStatusChanged | OrderCreated | OrderUpdated | OrderConfirmed | OrderFullyPaid | OrderCancelled | OrderFulfilled | DraftOrderCreated | DraftOrderUpdated | DraftOrderDeleted | ProductCreated | ProductUpdated | ProductDeleted | ProductVariantCreated | ProductVariantUpdated | ProductVariantOutOfStock | ProductVariantBackInStock | ProductVariantDeleted | SaleCreated | SaleUpdated | SaleDeleted | InvoiceRequested | InvoiceDeleted | InvoiceSent | FulfillmentCreated | FulfillmentCanceled | CustomerCreated | CustomerUpdated | CollectionCreated | CollectionUpdated | CollectionDeleted | CheckoutCreated | CheckoutUpdated | PageCreated | PageUpdated | PageDeleted | ShippingPriceCreated | ShippingPriceUpdated | ShippingPriceDeleted | ShippingZoneCreated | ShippingZoneUpdated | ShippingZoneDeleted | TransactionActionRequest | TranslationCreated | TranslationUpdated
+union Event = CategoryCreated | CategoryUpdated | CategoryDeleted | ChannelCreated | ChannelUpdated | ChannelDeleted | ChannelStatusChanged | GiftCardCreated | GiftCardUpdated | GiftCardDeleted | GiftCardStatusChanged | MenuCreated | MenuUpdated | MenuDeleted | MenuItemCreated | MenuItemUpdated | MenuItemDeleted | OrderCreated | OrderUpdated | OrderConfirmed | OrderFullyPaid | OrderCancelled | OrderFulfilled | DraftOrderCreated | DraftOrderUpdated | DraftOrderDeleted | ProductCreated | ProductUpdated | ProductDeleted | ProductVariantCreated | ProductVariantUpdated | ProductVariantOutOfStock | ProductVariantBackInStock | ProductVariantDeleted | SaleCreated | SaleUpdated | SaleDeleted | InvoiceRequested | InvoiceDeleted | InvoiceSent | FulfillmentCreated | FulfillmentCanceled | CustomerCreated | CustomerUpdated | CollectionCreated | CollectionUpdated | CollectionDeleted | CheckoutCreated | CheckoutUpdated | PageCreated | PageUpdated | PageDeleted | ShippingPriceCreated | ShippingPriceUpdated | ShippingPriceDeleted | ShippingZoneCreated | ShippingZoneUpdated | ShippingZoneDeleted | TransactionActionRequest | TranslationCreated | TranslationUpdated | VoucherCreated | VoucherUpdated | VoucherDeleted
 
 type CategoryCreated {
   """
@@ -20067,6 +20133,90 @@ type GiftCardStatusChanged {
   Note: this API is currently in Feature Preview and can be subject to changes at later point.
   """
   giftCard: GiftCard
+}
+
+type MenuCreated {
+  """
+  Look up a menu.
+  
+  Added in Saleor 3.4.
+  
+  Note: this API is currently in Feature Preview and can be subject to changes at later point.
+  """
+  menu(
+    """Slug of a channel for which the data should be returned."""
+    channel: String
+  ): Menu
+}
+
+type MenuUpdated {
+  """
+  Look up a menu.
+  
+  Added in Saleor 3.4.
+  
+  Note: this API is currently in Feature Preview and can be subject to changes at later point.
+  """
+  menu(
+    """Slug of a channel for which the data should be returned."""
+    channel: String
+  ): Menu
+}
+
+type MenuDeleted {
+  """
+  Look up a menu.
+  
+  Added in Saleor 3.4.
+  
+  Note: this API is currently in Feature Preview and can be subject to changes at later point.
+  """
+  menu(
+    """Slug of a channel for which the data should be returned."""
+    channel: String
+  ): Menu
+}
+
+type MenuItemCreated {
+  """
+  Look up a menu item.
+  
+  Added in Saleor 3.4.
+  
+  Note: this API is currently in Feature Preview and can be subject to changes at later point.
+  """
+  menuItem(
+    """Slug of a channel for which the data should be returned."""
+    channel: String
+  ): MenuItem
+}
+
+type MenuItemUpdated {
+  """
+  Look up a menu item.
+  
+  Added in Saleor 3.4.
+  
+  Note: this API is currently in Feature Preview and can be subject to changes at later point.
+  """
+  menuItem(
+    """Slug of a channel for which the data should be returned."""
+    channel: String
+  ): MenuItem
+}
+
+type MenuItemDeleted {
+  """
+  Look up a menu item.
+  
+  Added in Saleor 3.4.
+  
+  Note: this API is currently in Feature Preview and can be subject to changes at later point.
+  """
+  menuItem(
+    """Slug of a channel for which the data should be returned."""
+    channel: String
+  ): MenuItem
 }
 
 type OrderCreated {
@@ -20711,6 +20861,48 @@ type TranslationUpdated {
   Note: this API is currently in Feature Preview and can be subject to changes at later point.
   """
   translation: TranslationTypes
+}
+
+type VoucherCreated {
+  """
+  Look up a voucher.
+  
+  Added in Saleor 3.4.
+  
+  Note: this API is currently in Feature Preview and can be subject to changes at later point.
+  """
+  voucher(
+    """Slug of a channel for which the data should be returned."""
+    channel: String
+  ): Voucher
+}
+
+type VoucherUpdated {
+  """
+  Look up a voucher.
+  
+  Added in Saleor 3.4.
+  
+  Note: this API is currently in Feature Preview and can be subject to changes at later point.
+  """
+  voucher(
+    """Slug of a channel for which the data should be returned."""
+    channel: String
+  ): Voucher
+}
+
+type VoucherDeleted {
+  """
+  Look up a voucher.
+  
+  Added in Saleor 3.4.
+  
+  Note: this API is currently in Feature Preview and can be subject to changes at later point.
+  """
+  voucher(
+    """Slug of a channel for which the data should be returned."""
+    channel: String
+  ): Voucher
 }
 
 """An enumeration."""

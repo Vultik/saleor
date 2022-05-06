@@ -166,6 +166,60 @@ class GiftCardStatusChanged(ObjectType, GiftCardBase):
     ...
 
 
+class MenuBase(AbstractType):
+    menu = graphene.Field(
+        "saleor.graphql.menu.types.Menu",
+        channel=graphene.String(
+            description="Slug of a channel for which the data should be returned."
+        ),
+        description="Look up a menu." + ADDED_IN_34 + PREVIEW_FEATURE,
+    )
+
+    @staticmethod
+    def resolve_menu(root, info, channel=None):
+        _, menu = root
+        return ChannelContext(node=menu, channel_slug=channel)
+
+
+class MenuCreated(ObjectType, MenuBase):
+    ...
+
+
+class MenuUpdated(ObjectType, MenuBase):
+    ...
+
+
+class MenuDeleted(ObjectType, MenuBase):
+    ...
+
+
+class MenuItemBase(AbstractType):
+    menu_item = graphene.Field(
+        "saleor.graphql.menu.types.MenuItem",
+        channel=graphene.String(
+            description="Slug of a channel for which the data should be returned."
+        ),
+        description="Look up a menu item." + ADDED_IN_34 + PREVIEW_FEATURE,
+    )
+
+    @staticmethod
+    def resolve_menu_item(root, info, channel=None):
+        _, menu_item = root
+        return ChannelContext(node=menu_item, channel_slug=channel)
+
+
+class MenuItemCreated(ObjectType, MenuItemBase):
+    ...
+
+
+class MenuItemUpdated(ObjectType, MenuItemBase):
+    ...
+
+
+class MenuItemDeleted(ObjectType, MenuItemBase):
+    ...
+
+
 class ProductBase(AbstractType):
     product = graphene.Field(
         "saleor.graphql.product.types.Product",
@@ -567,6 +621,33 @@ class TranslationUpdated(ObjectType, TranslationBase):
     ...
 
 
+class VoucherBase(AbstractType):
+    voucher = graphene.Field(
+        "saleor.graphql.discount.types.Voucher",
+        channel=graphene.String(
+            description="Slug of a channel for which the data should be returned."
+        ),
+        description="Look up a voucher." + ADDED_IN_34 + PREVIEW_FEATURE,
+    )
+
+    @staticmethod
+    def resolve_voucher(root, _info):
+        _, voucher = root
+        return ChannelContext(node=voucher, channel_slug=None)
+
+
+class VoucherCreated(ObjectType, VoucherBase):
+    ...
+
+
+class VoucherUpdated(ObjectType, VoucherBase):
+    ...
+
+
+class VoucherDeleted(ObjectType, VoucherBase):
+    ...
+
+
 class Event(Union):
     class Meta:
         types = (
@@ -581,6 +662,12 @@ class Event(Union):
             GiftCardUpdated,
             GiftCardDeleted,
             GiftCardStatusChanged,
+            MenuCreated,
+            MenuUpdated,
+            MenuDeleted,
+            MenuItemCreated,
+            MenuItemUpdated,
+            MenuItemDeleted,
             OrderCreated,
             OrderUpdated,
             OrderConfirmed,
@@ -625,6 +712,9 @@ class Event(Union):
             TransactionActionRequest,
             TranslationCreated,
             TranslationUpdated,
+            VoucherCreated,
+            VoucherUpdated,
+            VoucherDeleted,
         )
 
     @classmethod
@@ -641,6 +731,12 @@ class Event(Union):
             WebhookEventAsyncType.GIFT_CARD_UPDATED: GiftCardUpdated,
             WebhookEventAsyncType.GIFT_CARD_DELETED: GiftCardDeleted,
             WebhookEventAsyncType.GIFT_CARD_STATUS_CHANGED: GiftCardStatusChanged,
+            WebhookEventAsyncType.MENU_CREATED: MenuCreated,
+            WebhookEventAsyncType.MENU_UPDATED: MenuUpdated,
+            WebhookEventAsyncType.MENU_DELETED: MenuDeleted,
+            WebhookEventAsyncType.MENU_ITEM_CREATED: MenuItemCreated,
+            WebhookEventAsyncType.MENU_ITEM_UPDATED: MenuItemUpdated,
+            WebhookEventAsyncType.MENU_ITEM_DELETED: MenuItemDeleted,
             WebhookEventAsyncType.ORDER_CREATED: OrderCreated,
             WebhookEventAsyncType.ORDER_UPDATED: OrderUpdated,
             WebhookEventAsyncType.ORDER_CONFIRMED: OrderConfirmed,
@@ -689,6 +785,9 @@ class Event(Union):
             WebhookEventAsyncType.TRANSACTION_ACTION_REQUEST: TransactionActionRequest,
             WebhookEventAsyncType.TRANSLATION_CREATED: TranslationCreated,
             WebhookEventAsyncType.TRANSLATION_UPDATED: TranslationUpdated,
+            WebhookEventAsyncType.VOUCHER_CREATED: VoucherCreated,
+            WebhookEventAsyncType.VOUCHER_UPDATED: VoucherUpdated,
+            WebhookEventAsyncType.VOUCHER_DELETED: VoucherDeleted,
         }
         return types.get(object_type)
 
