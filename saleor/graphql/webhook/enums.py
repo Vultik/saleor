@@ -78,10 +78,14 @@ WEBHOOK_EVENT_DESCRIPTION = {
     WebhookEventAsyncType.SHIPPING_ZONE_CREATED: "A new shipping zone is created.",
     WebhookEventAsyncType.SHIPPING_ZONE_UPDATED: "A shipping zone is updated.",
     WebhookEventAsyncType.SHIPPING_ZONE_DELETED: "A shipping zone is deleted.",
+    WebhookEventAsyncType.WAREHOUSE_CREATED: "A new warehouse created.",
+    WebhookEventAsyncType.WAREHOUSE_UPDATED: "A warehouse is updated.",
+    WebhookEventAsyncType.WAREHOUSE_DELETED: "A warehouse is deleted.",
     WebhookEventAsyncType.VOUCHER_CREATED: "A new voucher created.",
     WebhookEventAsyncType.VOUCHER_UPDATED: "A voucher is updated.",
     WebhookEventAsyncType.VOUCHER_DELETED: "A voucher is deleted.",
     WebhookEventAsyncType.ANY: "All the events.",
+    WebhookEventAsyncType.OBSERVABILITY: "An observability event is created.",
 }
 
 

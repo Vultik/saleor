@@ -1496,6 +1496,15 @@ enum WebhookEventTypeEnum {
   TRANSLATION_CREATED
   TRANSLATION_UPDATED
 
+  """A new warehouse created."""
+  WAREHOUSE_CREATED
+
+  """A warehouse is updated."""
+  WAREHOUSE_UPDATED
+
+  """A warehouse is deleted."""
+  WAREHOUSE_DELETED
+
   """A new voucher created."""
   VOUCHER_CREATED
 
@@ -1504,6 +1513,9 @@ enum WebhookEventTypeEnum {
 
   """A voucher is deleted."""
   VOUCHER_DELETED
+
+  """An observability event is created."""
+  OBSERVABILITY
   PAYMENT_AUTHORIZE
   PAYMENT_CAPTURE
   PAYMENT_CONFIRM
@@ -1735,6 +1747,15 @@ enum WebhookEventTypeAsyncEnum {
   TRANSLATION_CREATED
   TRANSLATION_UPDATED
 
+  """A new warehouse created."""
+  WAREHOUSE_CREATED
+
+  """A warehouse is updated."""
+  WAREHOUSE_UPDATED
+
+  """A warehouse is deleted."""
+  WAREHOUSE_DELETED
+
   """A new voucher created."""
   VOUCHER_CREATED
 
@@ -1743,6 +1764,9 @@ enum WebhookEventTypeAsyncEnum {
 
   """A voucher is deleted."""
   VOUCHER_DELETED
+
+  """An observability event is created."""
+  OBSERVABILITY
 }
 
 """Represents app data."""
@@ -1937,6 +1961,7 @@ enum PermissionEnum {
   MANAGE_STAFF
   IMPERSONATE_USER
   MANAGE_APPS
+  MANAGE_OBSERVABILITY
   MANAGE_CHANNELS
   MANAGE_DISCOUNTS
   MANAGE_PLUGINS
@@ -2265,9 +2290,13 @@ enum WebhookSampleEventTypeEnum {
   TRANSACTION_ACTION_REQUEST
   TRANSLATION_CREATED
   TRANSLATION_UPDATED
+  WAREHOUSE_CREATED
+  WAREHOUSE_UPDATED
+  WAREHOUSE_DELETED
   VOUCHER_CREATED
   VOUCHER_UPDATED
   VOUCHER_DELETED
+  OBSERVABILITY
 }
 
 """Represents warehouse."""
@@ -20286,7 +20315,7 @@ type Subscription {
   event: Event
 }
 
-union Event = AppInstalled | AppUpdated | AppDeleted | AppStatusChanged | CategoryCreated | CategoryUpdated | CategoryDeleted | ChannelCreated | ChannelUpdated | ChannelDeleted | ChannelStatusChanged | GiftCardCreated | GiftCardUpdated | GiftCardDeleted | GiftCardStatusChanged | MenuCreated | MenuUpdated | MenuDeleted | MenuItemCreated | MenuItemUpdated | MenuItemDeleted | OrderCreated | OrderUpdated | OrderConfirmed | OrderFullyPaid | OrderCancelled | OrderFulfilled | DraftOrderCreated | DraftOrderUpdated | DraftOrderDeleted | ProductCreated | ProductUpdated | ProductDeleted | ProductVariantCreated | ProductVariantUpdated | ProductVariantOutOfStock | ProductVariantBackInStock | ProductVariantDeleted | SaleCreated | SaleUpdated | SaleDeleted | InvoiceRequested | InvoiceDeleted | InvoiceSent | FulfillmentCreated | FulfillmentCanceled | CustomerCreated | CustomerUpdated | CollectionCreated | CollectionUpdated | CollectionDeleted | CheckoutCreated | CheckoutUpdated | PageCreated | PageUpdated | PageDeleted | ShippingPriceCreated | ShippingPriceUpdated | ShippingPriceDeleted | ShippingZoneCreated | ShippingZoneUpdated | ShippingZoneDeleted | TransactionActionRequest | TranslationCreated | TranslationUpdated | VoucherCreated | VoucherUpdated | VoucherDeleted
+union Event = AppInstalled | AppUpdated | AppDeleted | AppStatusChanged | CategoryCreated | CategoryUpdated | CategoryDeleted | ChannelCreated | ChannelUpdated | ChannelDeleted | ChannelStatusChanged | GiftCardCreated | GiftCardUpdated | GiftCardDeleted | GiftCardStatusChanged | MenuCreated | MenuUpdated | MenuDeleted | MenuItemCreated | MenuItemUpdated | MenuItemDeleted | OrderCreated | OrderUpdated | OrderConfirmed | OrderFullyPaid | OrderCancelled | OrderFulfilled | DraftOrderCreated | DraftOrderUpdated | DraftOrderDeleted | ProductCreated | ProductUpdated | ProductDeleted | ProductVariantCreated | ProductVariantUpdated | ProductVariantOutOfStock | ProductVariantBackInStock | ProductVariantDeleted | SaleCreated | SaleUpdated | SaleDeleted | InvoiceRequested | InvoiceDeleted | InvoiceSent | FulfillmentCreated | FulfillmentCanceled | CustomerCreated | CustomerUpdated | CollectionCreated | CollectionUpdated | CollectionDeleted | CheckoutCreated | CheckoutUpdated | PageCreated | PageUpdated | PageDeleted | ShippingPriceCreated | ShippingPriceUpdated | ShippingPriceDeleted | ShippingZoneCreated | ShippingZoneUpdated | ShippingZoneDeleted | TransactionActionRequest | TranslationCreated | TranslationUpdated | WarehouseCreated | WarehouseUpdated | WarehouseDeleted | VoucherCreated | VoucherUpdated | VoucherDeleted
 
 type AppInstalled {
   """
@@ -21179,6 +21208,39 @@ type TranslationUpdated {
   Note: this API is currently in Feature Preview and can be subject to changes at later point.
   """
   translation: TranslationTypes
+}
+
+type WarehouseCreated {
+  """
+  Look up a warehouse.
+  
+  Added in Saleor 3.4.
+  
+  Note: this API is currently in Feature Preview and can be subject to changes at later point.
+  """
+  warehouse: Warehouse
+}
+
+type WarehouseUpdated {
+  """
+  Look up a warehouse.
+  
+  Added in Saleor 3.4.
+  
+  Note: this API is currently in Feature Preview and can be subject to changes at later point.
+  """
+  warehouse: Warehouse
+}
+
+type WarehouseDeleted {
+  """
+  Look up a warehouse.
+  
+  Added in Saleor 3.4.
+  
+  Note: this API is currently in Feature Preview and can be subject to changes at later point.
+  """
+  warehouse: Warehouse
 }
 
 type VoucherCreated {
