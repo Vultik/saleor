@@ -7,6 +7,7 @@ All notable, unreleased changes to this project will be documented in this file.
 ### Saleor Apps
 
 - Add support for the CUSTOMER_* app mount points (#10163) by @krzysztofwolski
+- Add permission group webhooks: `PERMISSION_GROUP_CREATED`, `PERMISSION_GROUP_UPDATED`, `PERMISSION_GROUP_DELETED` - #10214 by @SzymJ
 
 ### Breaking changes
 - Drop django-versatileimagefield package; add a proxy view to generate thumbnails on-demand - #9988 by @IKarbowiak
@@ -41,6 +42,7 @@ All notable, unreleased changes to this project will be documented in this file.
 ### GraphQL API
 - Add synchronous tax calculation via webhooks - #9526 by @fowczarek, @mateuszgrzyb, @stnatic
   - Add `CHECKOUT_CALCULATE_TAXES` and `ORDER_CALCULATE_TAXES` to `WebhookEventTypeSyncEnum`
+- Add descriptions for some filters - #10240 by @dekoza
 
 ### Plugins
 - Add synchronous tax calculation via webhooks - #9526 by @fowczarek, @mateuszgrzyb, @stnatic
