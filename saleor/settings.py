@@ -554,6 +554,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "saleor.discount.tasks.send_sale_toggle_notifications",
         "schedule": initiated_sale_webhook_schedule,
     },
+    "update-products-search-vectors": {
+        "task": "saleor.product.tasks.update_products_search_vector_task",
+        "schedule": timedelta(seconds=20),
+    },
 }
 
 # The maximum wait time between each is_due() call on schedulers
@@ -599,6 +603,11 @@ DEFAULT_MENUS = {"top_menu_name": "navbar", "bottom_menu_name": "footer"}
 
 # Slug for channel precreated in Django migrations
 DEFAULT_CHANNEL_SLUG = os.environ.get("DEFAULT_CHANNEL_SLUG", "default-channel")
+
+# Set this to `True` if you want to create default channel, warehouse, product type and
+# category during migrations. It makes it easier for the users to create their first
+# product.
+POPULATE_DEFAULTS = get_bool_from_env("POPULATE_DEFAULTS", True)
 
 
 #  Sentry
@@ -747,3 +756,7 @@ PRODUCT_MAX_INDEXED_VARIANTS = 1000
 # to fix bug causing not returning errors for subscription queries.
 
 executor.SubscriberExecutionContext = PatchedSubscriberExecutionContext  # type: ignore
+
+UPDATE_SEARCH_VECTOR_INDEX_QUEUE_NAME = os.environ.get(
+    "UPDATE_SEARCH_VECTOR_INDEX_QUEUE_NAME", None
+)
