@@ -844,6 +844,23 @@ def customer_user2(address):
 
 
 @pytest.fixture
+def customer_users(address, customer_user, customer_user2):
+    default_address = address.get_copy()
+    customer_user3 = User.objects.create_user(
+        "test3@example.com",
+        "password",
+        default_billing_address=default_address,
+        default_shipping_address=default_address,
+        first_name="Chris",
+        last_name="Duck",
+    )
+    customer_user3.addresses.add(default_address)
+    customer_user3._password = "password"
+
+    return [customer_user, customer_user2, customer_user3]
+
+
+@pytest.fixture
 def user_checkout(customer_user, channel_USD):
     checkout = Checkout.objects.create(
         user=customer_user,
@@ -4610,7 +4627,7 @@ def dummy_address_data(address):
 
 @pytest.fixture
 def dummy_webhook_app_payment_data(dummy_payment_data, payment_app):
-    dummy_payment_data.gateway = to_payment_app_id(payment_app.id, "credit-card")
+    dummy_payment_data.gateway = to_payment_app_id(payment_app, "credit-card")
     return dummy_payment_data
 
 
@@ -5198,7 +5215,7 @@ def payment_dummy(db, order_with_lines):
 @pytest.fixture
 def payment(payment_dummy, payment_app):
     gateway_id = "credit-card"
-    gateway = to_payment_app_id(payment_app.id, gateway_id)
+    gateway = to_payment_app_id(payment_app, gateway_id)
     payment_dummy.gateway = gateway
     payment_dummy.save()
     return payment_dummy
@@ -5438,6 +5455,7 @@ def app(db):
     app = App.objects.create(
         name="Sample app objects",
         is_active=True,
+        identifier="saleor.app.test",
     )
     return app
 
@@ -5496,7 +5514,9 @@ def app_with_extensions(app_with_token, permission_manage_products):
 
 @pytest.fixture
 def payment_app(db, permission_manage_payments):
-    app = App.objects.create(name="Payment App", is_active=True)
+    app = App.objects.create(
+        name="Payment App", is_active=True, identifier="saleor.payment.test.app"
+    )
     app.tokens.create(name="Default")
     app.permissions.add(permission_manage_payments)
 
@@ -5516,7 +5536,9 @@ def payment_app(db, permission_manage_payments):
 
 @pytest.fixture
 def payment_app_with_subscription_webhooks(db, permission_manage_payments):
-    app = App.objects.create(name="Payment App", is_active=True)
+    app = App.objects.create(
+        name="Payment App", is_active=True, identifier="saleor.payment.test.app"
+    )
     app.tokens.create(name="Default")
     app.permissions.add(permission_manage_payments)
 
