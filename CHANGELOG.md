@@ -8,6 +8,11 @@ All notable, unreleased changes to this project will be documented in this file.
 - Add ability to filter by slug. #10578 by @kadewu
   - Affected types: Attribute, Category, Collection, Menu, Page, Product, ProductType, Warehouse
   - Deprecated `slug` in filter for `menus`. Use `slugs` instead
+- Add new `products` filters. #10784 by @kadewu
+  - `isAvailable`
+  - `publishedFrom`
+  - `availableFrom`
+  - `isVisibleInListing`
 - Add ability to filter payments by list of ids. #10821 by @kadewu
 - Add ability to filter customers by ids. #10694 by @kadewu
 - Add `User.checkouts` field. #10862 by @zedzior
@@ -15,6 +20,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Use `AttributeValue.name` instead of `AttributeValue.slug` to determine uniqueness of a value instance for dropdown and multiselect attributes. - #10881 by @jakubkuc
 - Allow sorting products by `CREATED_AT` field. #10900 by @zedzior
 - Add ability to pass metadata directly in create/update mutations for product app models - #10689 by @SzymJ
+- Add ability to use SKU argument in `productVariantUpdate`, `productVariantDelete`, `productVariantBulkDelete`, `productVariantStocksUpdate`, `productVariantStocksDelete`, `productVariantChannelListingUpdate` mutations - #10861 by @SzymJ
 
 ### Other changes
 
