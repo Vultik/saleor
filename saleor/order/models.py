@@ -19,7 +19,7 @@ from measurement.measures import Weight
 
 from ..app.models import App
 from ..channel.models import Channel
-from ..core.models import ModelWithMetadata
+from ..core.models import ModelWithExternalReference, ModelWithMetadata
 from ..core.permissions import OrderPermissions
 from ..core.units import WeightUnits
 from ..core.utils.json_serializer import CustomJsonEncoder
@@ -97,7 +97,7 @@ def get_order_number():
         return result[0]
 
 
-class Order(ModelWithMetadata):
+class Order(ModelWithMetadata, ModelWithExternalReference):
     id = models.UUIDField(primary_key=True, editable=False, unique=True, default=uuid4)
     number = models.IntegerField(unique=True, default=get_order_number, editable=False)
     use_old_id = models.BooleanField(default=False)
@@ -529,7 +529,7 @@ class OrderLine(ModelWithMetadata):
     unit_discount_value = models.DecimalField(
         max_digits=settings.DEFAULT_MAX_DIGITS,
         decimal_places=settings.DEFAULT_DECIMAL_PLACES,
-        default=0,
+        default=Decimal("0.0"),
     )
     unit_price_net = MoneyField(
         amount_field="unit_price_net_amount", currency_field="currency"

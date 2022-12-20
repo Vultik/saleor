@@ -25,6 +25,7 @@ from ...account.types import Address, AddressInput, User
 from ...app.dataloaders import get_app_promise
 from ...channel.utils import clean_channel, validate_channel
 from ...core.context import set_mutation_flag_in_context
+from ...core.descriptions import ADDED_IN_310
 from ...core.enums import LanguageCodeEnum
 from ...core.mutations import (
     BaseMutation,
@@ -334,7 +335,6 @@ class BaseAddressUpdate(ModelMutation, I18nMixin):
             user.search_document = prepare_user_search_document_value(user)
             user.save(update_fields=["search_document", "updated_at"])
         manager = get_plugin_manager_promise(info.context).get()
-        cls.call_event(manager.customer_updated, user)
         address = manager.change_user_address(address, None, user)
         cls.call_event(manager.address_updated, address)
 
@@ -397,7 +397,6 @@ class BaseAddressDelete(ModelDeleteMutation):
 
         response.user = user
         manager = get_plugin_manager_promise(info.context).get()
-        cls.call_event(manager.customer_updated, user)
         cls.call_event(manager.address_deleted, instance)
         return response
 
@@ -422,6 +421,9 @@ class UserAddressInput(graphene.InputObjectType):
 class CustomerInput(UserInput, UserAddressInput):
     language_code = graphene.Field(
         LanguageCodeEnum, required=False, description="User language code."
+    )
+    external_reference = graphene.String(
+        description="External ID of the customer." + ADDED_IN_310, required=False
     )
 
 

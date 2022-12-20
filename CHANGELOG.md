@@ -11,9 +11,20 @@ All notable, unreleased changes to this project will be documented in this file.
 - Add ability to filter and sort products of a category - #10917 by @yemeksepeti-cihankarluk, @ogunheper
   - Add `filter` argument to `Category.products`
   - Add `sortBy` argument to `Category.products`
+  - Allow to mutate objects, by newly added `externalReference` field, instead of Saleor-assigned ID. Apply to following models:
+    - `Product`
+    - `ProductVariant`
+    - `Attribute`
+    - `AttributeValue`
+    - `Order`
+    - `User`
+    - `Warehouse`
 
 ### Other changes
+- Fix fetching the `checkout.availableCollectionPoints` - #11489 by @IKarbowiak
 - Move checkout metadata to separate model - #11264  by @jakubkuc
+- Add ability to set a custom Celery queue for async webhook - #11511 by @NyanKiyoshi
+- Remove `CUSTOMER_UPDATED` webhook trigger from address mutations - #11395 by @jakubkuc
 
 # 3.9.0
 
