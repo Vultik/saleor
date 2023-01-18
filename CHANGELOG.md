@@ -10,6 +10,7 @@ All notable, unreleased changes to this project will be documented in this file.
 
 - Add `webhookDryRun` mutation - #11548 by @zedzior
 - Fix adding invalid label to meta fields - #11718 by @IKarbowiak
+- Add filter by `checkoutToken` to `Query.orders`. - #11689 by @kadewu
 
 ### Other changes
 
@@ -43,6 +44,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Remove `CUSTOMER_UPDATED` webhook trigger from address mutations - #11395 by @jakubkuc
 - Drop `Django.Auth` - #11305 by @fowczarek
 - Propagate voucher discount between checkout lines when charge_taxes is disabled - #11632 by @maarcingebala
+- Fix stock events triggers - #11714 by @jakubkuc
 - Accept the gift card code provided in the input - by @mociepka
 
 # 3.9.0
