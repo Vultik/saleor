@@ -1484,6 +1484,15 @@ type Webhook implements Node {
 
   """Used to define payloads for specific events."""
   subscriptionQuery: String
+
+  """
+  Custom headers, which will be added to HTTP request.
+  
+  Added in Saleor 3.12.
+  
+  Note: this API is currently in Feature Preview and can be subject to changes at later point.
+  """
+  customHeaders: JSONString
 }
 
 """An object with an ID"""
@@ -4950,12 +4959,12 @@ type Product implements Node & ObjectWithMetadata {
   descriptionJson: JSONString @deprecated(reason: "This field will be removed in Saleor 4.0. Use the `description` field instead.")
   thumbnail(
     """
-    Size of the image. If not provided, the original image will be returned.
+    Desired longest side the image in pixels. Defaults to 4096. Images are never cropped. Pass 0 to retrieve the original size (not recommended).
     """
     size: Int
 
     """
-    The format of the image. When not provided, format of the original image will be used. Must be provided together with the size value, otherwise original image will be returned.
+    The format of the image. When not provided, format of the original image will be used.
     
     Added in Saleor 3.6.
     
@@ -5975,12 +5984,12 @@ type Category implements Node & ObjectWithMetadata {
   ): CategoryCountableConnection
   backgroundImage(
     """
-    Size of the image. If not provided, the original image will be returned.
+    Desired longest side the image in pixels. Defaults to 4096. Images are never cropped. Pass 0 to retrieve the original size (not recommended).
     """
     size: Int
 
     """
-    The format of the image. When not provided, format of the original image will be used. Must be provided together with the size value, otherwise original image will be returned.
+    The format of the image. When not provided, format of the original image will be used.
     
     Added in Saleor 3.6.
     
@@ -6586,12 +6595,12 @@ type ProductImage {
   sortOrder: Int
   url(
     """
-    Size of the image. If not provided, the original image will be returned.
+    Desired longest side the image in pixels. Defaults to 4096. Images are never cropped. Pass 0 to retrieve the original size (not recommended).
     """
     size: Int
 
     """
-    The format of the image. When not provided, format of the original image will be used. Must be provided together with the size value, otherwise original image will be returned.
+    The format of the image. When not provided, format of the original image will be used.
     
     Added in Saleor 3.6.
     
@@ -6668,12 +6677,12 @@ type ProductMedia implements Node & ObjectWithMetadata {
   oembedData: JSONString!
   url(
     """
-    Size of the image. If not provided, the original image will be returned.
+    Desired longest side the image in pixels. Defaults to 4096. Images are never cropped. Pass 0 to retrieve the original size (not recommended).
     """
     size: Int
 
     """
-    The format of the image. When not provided, format of the original image will be used. Must be provided together with the size value, otherwise original image will be returned.
+    The format of the image. When not provided, format of the original image will be used.
     
     Added in Saleor 3.6.
     
@@ -7036,12 +7045,12 @@ type Collection implements Node & ObjectWithMetadata {
   ): ProductCountableConnection
   backgroundImage(
     """
-    Size of the image. If not provided, the original image will be returned.
+    Desired longest side the image in pixels. Defaults to 4096. Images are never cropped. Pass 0 to retrieve the original size (not recommended).
     """
     size: Int
 
     """
-    The format of the image. When not provided, format of the original image will be used. Must be provided together with the size value, otherwise original image will be returned.
+    The format of the image. When not provided, format of the original image will be used.
     
     Added in Saleor 3.6.
     
@@ -8849,12 +8858,12 @@ type User implements Node & ObjectWithMetadata {
   editableGroups: [Group!]
   avatar(
     """
-    Size of the image. If not provided, the original image will be returned.
+    Desired longest side the image in pixels. Defaults to 4096. Images are never cropped. Pass 0 to retrieve the original size (not recommended).
     """
     size: Int
 
     """
-    The format of the image. When not provided, format of the original image will be used. Must be provided together with the size value, otherwise original image will be returned.
+    The format of the image. When not provided, format of the original image will be used.
     
     Added in Saleor 3.6.
     
@@ -9998,12 +10007,12 @@ type OrderLine implements Node & ObjectWithMetadata {
   digitalContentUrl: DigitalContentUrl
   thumbnail(
     """
-    Size of the image. If not provided, the original image will be returned.
+    Desired longest side the image in pixels. Defaults to 4096. Images are never cropped. Pass 0 to retrieve the original size (not recommended).
     """
     size: Int
 
     """
-    The format of the image. When not provided, format of the original image will be used. Must be provided together with the size value, otherwise original image will be returned.
+    The format of the image. When not provided, format of the original image will be used.
     
     Added in Saleor 3.6.
     
@@ -16085,6 +16094,7 @@ enum WebhookErrorCode {
   MISSING_SUBSCRIPTION
   UNABLE_TO_PARSE
   MISSING_EVENT
+  INVALID_CUSTOM_HEADERS
 }
 
 input WebhookCreateInput {
@@ -16128,6 +16138,15 @@ input WebhookCreateInput {
   Note: this API is currently in Feature Preview and can be subject to changes at later point.
   """
   query: String
+
+  """
+  Custom headers, which will be added to HTTP request. There is a limitation of 5 headers per webhook and 998 characters per header.Only "X-*" and "Authorization*" keys are allowed.
+  
+  Added in Saleor 3.12.
+  
+  Note: this API is currently in Feature Preview and can be subject to changes at later point.
+  """
+  customHeaders: JSONString
 }
 
 """
@@ -16193,6 +16212,15 @@ input WebhookUpdateInput {
   Note: this API is currently in Feature Preview and can be subject to changes at later point.
   """
   query: String
+
+  """
+  Custom headers, which will be added to HTTP request. There is a limitation of 5 headers per webhook and 998 characters per header.Only "X-*" and "Authorization*" keys are allowed.
+  
+  Added in Saleor 3.12.
+  
+  Note: this API is currently in Feature Preview and can be subject to changes at later point.
+  """
+  customHeaders: JSONString
 }
 
 """
@@ -23135,6 +23163,7 @@ enum AppErrorCode {
   INVALID_PERMISSION
   INVALID_URL_FORMAT
   INVALID_MANIFEST_FORMAT
+  INVALID_CUSTOM_HEADERS
   MANIFEST_URL_CANT_CONNECT
   NOT_FOUND
   REQUIRED

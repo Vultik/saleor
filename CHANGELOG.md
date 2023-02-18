@@ -32,8 +32,12 @@ All notable, unreleased changes to this project will be documented in this file.
         }
        }
     ```
+- Change the discount rounding mode - #12041 by @IKarbowiak
+  - Change the rounding mode from `ROUND_DOWN` to `ROUND_HALF_UP` - it affects the discount amount and total price of future checkouts and orders with a percentage discount applied.
+  The discount amount might be 0.01 greater, and the total price might be 0.01 lower.
+  E.g. if you had an order for $13 and applied a 12.5% discount, you would get $11.38 with a $1.62 discount, but now it will be calculated as $11.37 with $1.63 discount.
 
-
+- Media and image fields now default to returning 4K thumbnails instead of original uploads - #11996 by @patrys
 
 ### GraphQL API
 - Add possibility  to remove `stocks` and `channel listings` in `ProductVariantBulkUpdate` mutation.
@@ -44,6 +48,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Add meta fields to `ProductMedia` model - #11894 by @zedzior
 - Make `oldPassword` argument on `passwordChange` mutation optional; support accounts without usable passwords - @11999 by @rafalp
 - Added support for AVIF images, added `AVIF` and `ORIGINAL` to `ThumbnailFormatEnum` - #11998 by @patrys
+- Introduce custom headers for webhook requests - #11978 by @zedzior
 
 
 ### Other changes
