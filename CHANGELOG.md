@@ -40,6 +40,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Media and image fields now default to returning 4K thumbnails instead of original uploads - #11996 by @patrys
 
 ### GraphQL API
+- Added support for all attributes types in `BulkAttributeValueInput` - #12095 by @SzymJ
 - Add possibility  to remove `stocks` and `channel listings` in `ProductVariantBulkUpdate` mutation.
 - Move `orderSettings` query to `Channel` type - #11417 by @kadewu:
   - Mutation `Channel.channelCreate` and `Channel.channelUpdate` have new `orderSettings` input.
@@ -52,7 +53,7 @@ All notable, unreleased changes to this project will be documented in this file.
 
 
 ### Other changes
-
+- Fix saving `metadata` in `ProductVariantBulkCreate` and `ProductVariantBulkupdate` mutations - #12097 by @SzymJ
 - Enhance webhook's subscription query validation. Apply the validation and event inheritance to manifest validation - #11797 by @zedzior
 - Fix GraphQL playground when the `operationName` is set across different tabs - #11936 by @zaiste
 - Add new asynchronous events related to media: #11918 by @zedzior
