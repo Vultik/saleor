@@ -1879,6 +1879,36 @@ def test_calculate_order_total(
 
 @pytest.mark.vcr
 @override_settings(PLUGINS=["saleor.plugins.avatax.plugin.AvataxPlugin"])
+def test_calculate_order_total_for_JPY(
+    order_line_JPY,
+    shipping_zone_JPY,
+    channel_JPY,
+    site_settings,
+    address,
+    plugin_configuration,
+):
+    # given
+    plugin_configuration(channel=channel_JPY)
+    manager = get_plugins_manager()
+    order = order_line_JPY.order
+    method = shipping_zone_JPY.shipping_methods.get()
+    order.shipping_address = order.billing_address.get_copy()
+    order_set_shipping_method(order, method)
+    order.save()
+
+    site_settings.company_address = address
+    site_settings.save()
+
+    # when
+    price = manager.calculate_order_total(order, order.lines.all())
+
+    # then
+    price = quantize_price(price, price.currency)
+    assert price == TaxedMoney(net=Money("3497", "JPY"), gross=Money("4300", "JPY"))
+
+
+@pytest.mark.vcr
+@override_settings(PLUGINS=["saleor.plugins.avatax.plugin.AvataxPlugin"])
 def test_calculate_order_shipping_entire_order_voucher(
     order_line, shipping_zone, voucher, site_settings, address, plugin_configuration
 ):
@@ -3504,6 +3534,38 @@ def test_get_order_shipping_tax_rate(
     method = shipping_zone.shipping_methods.get()
     order.shipping_address = order.billing_address.get_copy()
     order_set_shipping_method(order, method)
+    order.save()
+
+    # when
+    tax_rate = manager.get_order_shipping_tax_rate(order, shipping_price)
+
+    # then
+    assert tax_rate == Decimal("0.23")
+
+
+@pytest.mark.vcr
+@override_settings(PLUGINS=["saleor.plugins.avatax.plugin.AvataxPlugin"])
+def test_get_order_shipping_tax_rate_shipping_with_tax_class(
+    order_line, shipping_zone, plugin_configuration, site_settings, address
+):
+    # given
+    site_settings.company_address = address
+    site_settings.save()
+    order = order_line.order
+    plugin_configuration()
+    shipping_price = TaxedMoney(Money(12, "USD"), Money(15, "USD"))
+
+    manager = get_plugins_manager()
+
+    method = shipping_zone.shipping_methods.get()
+    order.shipping_address = order.billing_address.get_copy()
+    order_set_shipping_method(order, method)
+    order.shipping_tax_class = method.tax_class
+    order.shipping_tax_class_name = method.tax_class.name
+    order.shipping_tax_class_metadata = method.tax_class.metadata
+    order.shipping_tax_class_private_metadata = (
+        method.tax_class.private_metadata
+    )  # noqa: E501
     order.save()
 
     # when
