@@ -139,6 +139,7 @@ All notable, unreleased changes to this project will be documented in this file.
 
 - Add `requiredSaleorVersion` field to the App manifest determining the required Saleor version as semver range - #12164 by @przlada
 - Add new field `author` to the App manifest - #12166 by @przlada
+- Add `GIFT_CARD_SENT` asynchronous event to webhooks - #12472 by @rafalp
 
 # 3.12.0
 
@@ -217,6 +218,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Set flat rates as the default tax calculation strategy - #12069 by @maarcingebala
   - Enables flat rates for channels in which no tax calculation method was set.
 - Users created by the OIDC plugin now have unusable password set instead of empty string - #12103 by @rafalp
+- Fix thumbnail generation long image names - #12435 by @KirillPlaksin
 
 # 3.11.0
 
