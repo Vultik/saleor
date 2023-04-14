@@ -37,7 +37,7 @@ from ..core.descriptions import (
     DEPRECATED_IN_3X_FIELD,
     PREVIEW_FEATURE,
 )
-from ..core.doc_category import DOC_CATEGORY_PAYMENTS
+from ..core.doc_category import DOC_CATEGORY_CHECKOUT, DOC_CATEGORY_PAYMENTS
 from ..core.enums import LanguageCodeEnum
 from ..core.scalars import UUID
 from ..core.tracing import traced_resolver
@@ -352,6 +352,7 @@ class CheckoutLine(ModelObjectType[models.CheckoutLine]):
 
 class CheckoutLineCountableConnection(CountableConnection):
     class Meta:
+        doc_category = DOC_CATEGORY_CHECKOUT
         node = CheckoutLine
 
 
@@ -360,7 +361,7 @@ class DeliveryMethod(graphene.Union):
         description = (
             "Represents a delivery method chosen for the checkout. "
             '`Warehouse` type is used when checkout is marked as "click and collect" '
-            "and `ShippingMethod` otherwise." + ADDED_IN_31 + PREVIEW_FEATURE
+            "and `ShippingMethod` otherwise." + ADDED_IN_31
         )
         types = (Warehouse, ShippingMethod)
 
@@ -409,9 +410,7 @@ class Checkout(ModelObjectType[models.Checkout]):
         Warehouse,
         required=True,
         description=(
-            "Collection points that can be used for this order."
-            + ADDED_IN_31
-            + PREVIEW_FEATURE
+            "Collection points that can be used for this order." + ADDED_IN_31
         ),
     )
     available_payment_gateways = NonNullList(
@@ -455,11 +454,7 @@ class Checkout(ModelObjectType[models.Checkout]):
     )
     delivery_method = graphene.Field(
         DeliveryMethod,
-        description=(
-            "The delivery method selected for this checkout."
-            + ADDED_IN_31
-            + PREVIEW_FEATURE
-        ),
+        description=("The delivery method selected for this checkout." + ADDED_IN_31),
     )
     subtotal_price = graphene.Field(
         TaxedMoney,
@@ -468,9 +463,7 @@ class Checkout(ModelObjectType[models.Checkout]):
     )
     tax_exemption = graphene.Boolean(
         description=(
-            "Returns True if checkout has to be exempt from taxes."
-            + ADDED_IN_38
-            + PREVIEW_FEATURE
+            "Returns True if checkout has to be exempt from taxes." + ADDED_IN_38
         ),
         required=True,
     )
@@ -509,7 +502,7 @@ class Checkout(ModelObjectType[models.Checkout]):
     display_gross_prices = graphene.Boolean(
         description=(
             "Determines whether checkout prices should include taxes when displayed "
-            "in a storefront." + ADDED_IN_39 + PREVIEW_FEATURE
+            "in a storefront." + ADDED_IN_39
         ),
         required=True,
     )
@@ -951,4 +944,5 @@ class Checkout(ModelObjectType[models.Checkout]):
 
 class CheckoutCountableConnection(CountableConnection):
     class Meta:
+        doc_category = DOC_CATEGORY_CHECKOUT
         node = Checkout
