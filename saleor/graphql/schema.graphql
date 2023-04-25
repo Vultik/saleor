@@ -12815,7 +12815,7 @@ type Mutation {
   """
   Updates a webhook subscription. 
   
-  Requires one of the following permissions: MANAGE_APPS.
+  Requires one of the following permissions: MANAGE_APPS, AUTHENTICATED_APP.
   """
   webhookUpdate(
     """ID of a webhook to update."""
@@ -16938,7 +16938,7 @@ type WebhookDelete @doc(category: "Webhooks") {
 """
 Updates a webhook subscription. 
 
-Requires one of the following permissions: MANAGE_APPS.
+Requires one of the following permissions: MANAGE_APPS, AUTHENTICATED_APP.
 """
 type WebhookUpdate @doc(category: "Webhooks") {
   webhookErrors: [WebhookError!]! @deprecated(reason: "This field will be removed in Saleor 4.0. Use `errors` field instead.")
@@ -22572,6 +22572,20 @@ input InvoiceCreateInput @doc(category: "Orders") {
 
   """URL of an invoice to download."""
   url: String!
+
+  """
+  Fields required to update the invoice metadata.
+  
+  Added in Saleor 3.14.
+  """
+  metadata: [MetadataInput!]
+
+  """
+  Fields required to update the invoice private metadata.
+  
+  Added in Saleor 3.14.
+  """
+  privateMetadata: [MetadataInput!]
 }
 
 """
@@ -22602,6 +22616,20 @@ input UpdateInvoiceInput @doc(category: "Orders") {
 
   """URL of an invoice to download."""
   url: String
+
+  """
+  Fields required to update the invoice metadata.
+  
+  Added in Saleor 3.14.
+  """
+  metadata: [MetadataInput!]
+
+  """
+  Fields required to update the invoice private metadata.
+  
+  Added in Saleor 3.14.
+  """
+  privateMetadata: [MetadataInput!]
 }
 
 """
