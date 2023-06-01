@@ -1966,6 +1966,14 @@ def image():
 
 
 @pytest.fixture
+def icon_image():
+    img_data = BytesIO()
+    image = Image.new("RGB", size=(1, 1))
+    image.save(img_data, format="PNG")
+    return SimpleUploadedFile("logo.png", img_data.getvalue())
+
+
+@pytest.fixture
 def image_list():
     img_data_1 = BytesIO()
     image_1 = Image.new("RGB", size=(1, 1))
@@ -5108,6 +5116,17 @@ def permission_group_manage_apps(permission_manage_apps, staff_users):
         name="Manage apps group.", restricted_access_to_channels=False
     )
     group.permissions.add(permission_manage_apps)
+
+    group.user_set.add(staff_users[1])
+    return group
+
+
+@pytest.fixture
+def permission_group_handle_payments(permission_manage_payments, staff_users):
+    group = Group.objects.create(
+        name="Manage apps group.", restricted_access_to_channels=False
+    )
+    group.permissions.add(permission_manage_payments)
 
     group.user_set.add(staff_users[1])
     return group
