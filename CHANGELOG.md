@@ -16,6 +16,7 @@ All notable, unreleased changes to this project will be documented in this file.
 
 ### Breaking changes
 
+- Gift cards can now be applied on a checkout without an email, fields `used_by` and `used_by_email` on GiftCard model are deprecated and will be removed in 4.0. - #13019 by @tomaszszymanski129
 - The `ProductBulkCreateError.path` field for errors related to product variants input in the `productBulkCreate` mutation will now return more detailed error paths, e.g. `variants.1.stocks.0.warehouse` instead of `variants.1.warehouses` - #12534 by @SzymJ
 - The `discounts` field has been removed from the listed plugin manager methods. Instead of the `discounts` argument, an applied `discount` is now assigned to each line in the `CheckoutLineInfo` inside the `CheckoutInfo` object. - #11934 by @fowczarek
 
@@ -52,6 +53,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Add `enable_account_confirmation_by_email` to `SiteSettings` model and allow to update it via `shopSettingsUpdate` mutation - #12781 by @SzymJ
 - Add `brand` optional field with brand data (initially logo image) to `Manifest`, `AppInstallation` and `App` - #12361 by @przlada
 - Add `externalReference` field to `AttributeValueInput`, `BulkAttributeValueInput` and `AttributeValueSelectableTypeInput` - #12823 by @SzymJ
+- [Preview] Add `where` filtering option with `ids` filter for `product_variants`, `collections` and `categories` query - #13004 by @zedzior
 
 ### Saleor Apps
 
