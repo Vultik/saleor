@@ -4735,6 +4735,7 @@ type ShippingMethodChannelListing implements Node @doc(category: "Shipping") {
 
 """Represents channel."""
 type Channel implements Node @doc(category: "Channels") {
+  """The ID of the channel."""
   id: ID!
 
   """Slug of the channel."""
@@ -5788,6 +5789,7 @@ type TaxClassCountryRate @doc(category: "Taxes") {
 Custom attribute of a product. Attributes can be assigned to products and variants at the product type level.
 """
 type Attribute implements Node & ObjectWithMetadata @doc(category: "Attributes") {
+  """The ID of the attribute."""
   id: ID!
 
   """List of private metadata items. Requires staff permissions to access."""
@@ -5917,6 +5919,10 @@ type Attribute implements Node & ObjectWithMetadata @doc(category: "Attributes")
 
   """Flag indicating that attribute has predefined choices."""
   withChoices: Boolean!
+
+  """
+  A list of product types that use this attribute as a product attribute.
+  """
   productTypes(
     """Return the elements in the list that come before the specified cursor."""
     before: String
@@ -5934,6 +5940,10 @@ type Attribute implements Node & ObjectWithMetadata @doc(category: "Attributes")
     """
     last: Int
   ): ProductTypeCountableConnection!
+
+  """
+  A list of product types that use this attribute as a product variant attribute.
+  """
   productVariantTypes(
     """Return the elements in the list that come before the specified cursor."""
     before: String
@@ -6045,6 +6055,7 @@ type AttributeValueCountableEdge @doc(category: "Attributes") {
 
 """Represents a value of an attribute."""
 type AttributeValue implements Node @doc(category: "Attributes") {
+  """The ID of the attribute value."""
   id: ID!
 
   """Name of a value displayed in the interface."""
@@ -9615,6 +9626,7 @@ type User implements Node & ObjectWithMetadata @doc(category: "Users") {
 
 """Checkout object."""
 type Checkout implements Node & ObjectWithMetadata @doc(category: "Checkout") {
+  """The ID of the checkout."""
   id: ID!
 
   """List of private metadata items. Requires staff permissions to access."""
@@ -9662,6 +9674,8 @@ type Checkout implements Node & ObjectWithMetadata @doc(category: "Checkout") {
   Note: this API is currently in Feature Preview and can be subject to changes at later point.
   """
   metafields(keys: [String!]): Metadata
+
+  """The date and time when the checkout was created."""
   created: DateTime!
 
   """
@@ -9671,14 +9685,36 @@ type Checkout implements Node & ObjectWithMetadata @doc(category: "Checkout") {
   """
   updatedAt: DateTime!
   lastChange: DateTime! @deprecated(reason: "This field will be removed in Saleor 4.0. Use `updatedAt` instead.")
+
+  """The user assigned to the checkout."""
   user: User
+
+  """The channel for which checkout was created."""
   channel: Channel!
+
+  """The billing address of the checkout."""
   billingAddress: Address
+
+  """The shipping address of the checkout."""
   shippingAddress: Address
+
+  """The note for the checkout."""
   note: String!
+
+  """
+  The total discount applied to the checkout. Note: Only discount created via voucher are included in this field.
+  """
   discount: Money
+
+  """The name of voucher assigned to the checkout."""
   discountName: String
+
+  """
+  Translation of the discountName field in the language set in Checkout.languageCode field.Note: this field is set automatically when Checkout.languageCode is defined; otherwise it's null
+  """
   translatedDiscountName: String
+
+  """The code of voucher assigned to the checkout."""
   voucherCode: String
 
   """Shipping methods that can be used with this checkout."""
@@ -10053,6 +10089,7 @@ type GiftCardTag implements Node @doc(category: "Gift cards") {
 
 """Represents an item in the checkout."""
 type CheckoutLine implements Node & ObjectWithMetadata @doc(category: "Checkout") {
+  """The ID of the checkout line."""
   id: ID!
 
   """
@@ -10112,7 +10149,11 @@ type CheckoutLine implements Node & ObjectWithMetadata @doc(category: "Checkout"
   Note: this API is currently in Feature Preview and can be subject to changes at later point.
   """
   metafields(keys: [String!]): Metadata
+
+  """The product variant from which the checkout line was created."""
   variant: ProductVariant!
+
+  """The quantity of product variant assigned to the checkout line."""
   quantity: Int!
 
   """The unit price of the checkout line, with taxes and discounts."""
@@ -25249,7 +25290,7 @@ enum ChannelErrorCode @doc(category: "Channels") {
 }
 
 input ChannelCreateInput @doc(category: "Channels") {
-  """isActive flag."""
+  """Determine if channel will be set active or not."""
   isActive: Boolean
 
   """
@@ -25363,7 +25404,7 @@ type ChannelUpdate @doc(category: "Channels") {
 }
 
 input ChannelUpdateInput @doc(category: "Channels") {
-  """isActive flag."""
+  """Determine if channel will be set active or not."""
   isActive: Boolean
 
   """
