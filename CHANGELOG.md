@@ -5,19 +5,30 @@ All notable, unreleased changes to this project will be documented in this file.
 # 3.15.0 [Unreleased]
 
 ### Breaking changes
+
 - Remove `OrderBulkCreateInput.trackingClientId` field - #13146 by @SzymJ
+- Drop backend integration with Open Exchange Rates API - #13175 by @maarcingebala
+  - Note: this changes doesn't affect Saleor Cloud users, as the integration was never enabled there.
+  - After this change, the following fields in API alway return `null` values:
+    - `ProductPricingInfo.discountLocalCurrency`
+    - `ProductPricingInfo.priceRangeLocalCurrency`
+    - `VariantPricingInfo.discountLocalCurrency`
+    - `VariantPricingInfo.priceLocalCurrency`
 
 ### GraphQL API
 
 - Add `orderNoteAdd` and `orderNoteUpdate` mutations and deprecate `orderAddNote` mutation - #12434 by @pawelzar
 - Deprecate `Order.trackingClientId` field - #13146 by @SzymJ
+- Fix error "Cannot return null for non-nullable field Webhook.name" - #12989 by @Smit-Parmar
+- Added `GiftCardFilterInput.createdByEmail` filter - #13132 by @Smit-Parmar
 
 ### Saleor Apps
+
 - Introduce `Saleor-Schema-Version` HTTP header in app manifest fetching and app installation handshake requests. - #13075 by @przlada
 
 ### Other changes
+
 - Expand metric units to support more types of products. - #13043 by @FremahA
-- Fix Error Cannot return null for non-nullable field Webhook.name. - #12989 by @cyborg7898
 - Remove unused `django-versatileimagefield` package - #13148 by @SzymJ
 - Remove unused `google-measurement-protocol` package - #13146 by @SzymJ
 - Add missing descriptions to App module. - #13163 by @fowczarek
@@ -26,6 +37,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Add missing descriptions to channel module. - #13166 by @fowczarek
 - Add missing descriptions to checkout module. - #13167 by @fowczarek
 - Add missing descriptions to attribute module. - #13165 by @fowczarek
+- Add missing descriptions to csv module. - #13184 by @fowczarek
 
 # 3.14.0
 
