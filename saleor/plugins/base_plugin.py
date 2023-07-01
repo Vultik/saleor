@@ -157,6 +157,12 @@ class BasePlugin:
         ["User", str, str, Optional[str], None], None
     ]
 
+    # Trigger when account change email is requested.
+    #
+    # Overwrite this method if you need to trigger specific logic after an account
+    # change email is requested.
+    account_change_email_requested: Callable[["User", str, str, str, str, None], None]
+
     # Trigger when account delete is requested.
     #
     # Overwrite this method if you need to trigger specific logic after an account
@@ -824,8 +830,6 @@ class BasePlugin:
     ]
 
     process_payment: Callable[["PaymentData", Any], Any]
-
-    transaction_action_request: Callable[["TransactionActionData", None], None]
 
     transaction_charge_requested: Callable[["TransactionActionData", None], None]
 
