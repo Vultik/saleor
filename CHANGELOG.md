@@ -64,9 +64,12 @@ All notable, unreleased changes to this project will be documented in this file.
 - Added `metadata` and `privateMetadata` in `ShopSettingsInput`. #13128 by @Smit-Parmar
 - Fix error "Cannot return null for non-nullable field Webhook.name" - #12989 by @Smit-Parmar
 - Added `GiftCardFilterInput.createdByEmail` filter - #13132 by @Smit-Parmar
+- Add metadata support for channels. #13230 by @Smit-Parmar
 - Remove `Preview feature` label from `metafield`, `metafields`, `metadata`,
 `privateMetafield`, `privateMetafields` and `privateMetadata` fields - #13245 by @korycins
 - Add `search` to `giftCards` query - #13173 by @zedzior
+- Add `ProductBulkTranslate` mutation - #13329 by @SzymJ
+- Add `ProductVariantBulkTranslate` mutation - #13329 by @SzymJ
 
 ### Saleor Apps
 
@@ -93,6 +96,8 @@ All notable, unreleased changes to this project will be documented in this file.
 - Add missing descriptions to Shop module. - #13295 by @Smit-Parmar
 - Add missing descriptions to Warehouse module. - #13264 by @Smit-Parmar
 - Add missing descriptions to Product module. - #13259 by @FremahA
+- Add missing description for Invoice module - #13265 by @DevilsAutumn
+- Add missing descriptions to Discount module - #13261 by @devilsautumn
 
 # 3.14.0
 
