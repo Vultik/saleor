@@ -74,6 +74,8 @@ Shipping methods can be removed by the user after it has been assigned to a chec
 - Add `search` to `giftCards` query - #13173 by @zedzior
 - Add `ProductBulkTranslate` mutation - #13329 by @SzymJ
 - Add `ProductVariantBulkTranslate` mutation - #13329 by @SzymJ
+- Add `AttributeBulkCreate` mutation - #13398 by @SzymJ
+- Deprecate `WebhookEventTypeAsyncEnum.ANY_EVENTS` and `WebhookEventTypeEnum.ANY_EVENTS`; instead listeners should subscribe to specific webhook events -  #13452 by @maarcingebala
 
 ### Saleor Apps
 
@@ -108,6 +110,8 @@ Shipping methods can be removed by the user after it has been assigned to a chec
 - Fix deleting event payloads by adding batches - #13368 by @jakubkuc
 - Add missing descriptions to Shipping module. - #13372 by @Smit-Parmar
 - Fix error handling in the permission check for `Query.webhook` - #13378 by @patrys
+- Add missing descriptions to Translation module. - #13410 by @Smit-Parmar
+- Add missing descriptions to menu module - #13409 by @devilsautumn
 
 # 3.14.0
 
