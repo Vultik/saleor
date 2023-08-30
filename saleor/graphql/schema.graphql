@@ -2020,6 +2020,13 @@ enum WebhookEventTypeEnum @doc(category: "Webhooks") {
   PRODUCT_METADATA_UPDATED
 
   """
+  A product export is completed.
+  
+  Added in Saleor 3.16.
+  """
+  PRODUCT_EXPORT_COMPLETED
+
+  """
   A new product media is created.
   
   Added in Saleor 3.12.
@@ -2692,6 +2699,13 @@ enum WebhookEventTypeAsyncEnum @doc(category: "Webhooks") {
   Added in Saleor 3.8.
   """
   PRODUCT_METADATA_UPDATED
+
+  """
+  A product export is completed.
+  
+  Added in Saleor 3.16.
+  """
+  PRODUCT_EXPORT_COMPLETED
 
   """
   A new product media is created.
@@ -3502,6 +3516,7 @@ enum WebhookSampleEventTypeEnum @doc(category: "Webhooks") {
   PRODUCT_UPDATED
   PRODUCT_DELETED
   PRODUCT_METADATA_UPDATED
+  PRODUCT_EXPORT_COMPLETED
   PRODUCT_MEDIA_CREATED
   PRODUCT_MEDIA_UPDATED
   PRODUCT_MEDIA_DELETED
@@ -6387,6 +6402,7 @@ enum AttributeChoicesSortField @doc(category: "Attributes") {
 input AttributeValueFilterInput @doc(category: "Attributes") {
   search: String
   ids: [ID!]
+  slugs: [String!]
 }
 
 type AttributeTranslation implements Node @doc(category: "Attributes") {
@@ -17023,11 +17039,12 @@ type Mutation {
   
   Triggers the following webhook events:
   - NOTIFY_USER (async): A notification for the exported file.
+  - PRODUCT_EXPORT_COMPLETED (async): A notification for the exported file.
   """
   exportProducts(
     """Fields required to export product data."""
     input: ExportProductsInput!
-  ): ExportProducts @doc(category: "Products") @webhookEventsInfo(asyncEvents: [NOTIFY_USER], syncEvents: [])
+  ): ExportProducts @doc(category: "Products") @webhookEventsInfo(asyncEvents: [NOTIFY_USER, PRODUCT_EXPORT_COMPLETED], syncEvents: [])
 
   """
   Export gift cards to csv file.
@@ -18333,6 +18350,7 @@ type Mutation {
   
   Triggers the following webhook events:
   - NOTIFY_USER (async): A notification for account email change.
+  - ACCOUNT_CHANGE_EMAIL_REQUESTED (async): An account email change was requested.
   """
   requestEmailChange(
     """
@@ -18350,7 +18368,7 @@ type Mutation {
     URL of a view where users should be redirected to update the email address. URL in RFC 1808 format.
     """
     redirectUrl: String!
-  ): RequestEmailChange @doc(category: "Users") @webhookEventsInfo(asyncEvents: [NOTIFY_USER], syncEvents: [])
+  ): RequestEmailChange @doc(category: "Users") @webhookEventsInfo(asyncEvents: [NOTIFY_USER, ACCOUNT_CHANGE_EMAIL_REQUESTED], syncEvents: [])
 
   """
   Confirm the email change of the logged-in user. 
@@ -18466,6 +18484,7 @@ type Mutation {
   
   Triggers the following webhook events:
   - NOTIFY_USER (async): A notification for account delete request.
+  - ACCOUNT_DELETE_REQUESTED (async): An account delete requested.
   """
   accountRequestDeletion(
     """
@@ -18477,7 +18496,7 @@ type Mutation {
     URL of a view where users should be redirected to delete their account. URL in RFC 1808 format.
     """
     redirectUrl: String!
-  ): AccountRequestDeletion @doc(category: "Users") @webhookEventsInfo(asyncEvents: [NOTIFY_USER], syncEvents: [])
+  ): AccountRequestDeletion @doc(category: "Users") @webhookEventsInfo(asyncEvents: [NOTIFY_USER, ACCOUNT_DELETE_REQUESTED], syncEvents: [])
 
   """
   Remove user account. 
@@ -26240,8 +26259,9 @@ Requires one of the following permissions: MANAGE_PRODUCTS.
 
 Triggers the following webhook events:
 - NOTIFY_USER (async): A notification for the exported file.
+- PRODUCT_EXPORT_COMPLETED (async): A notification for the exported file.
 """
-type ExportProducts @doc(category: "Products") @webhookEventsInfo(asyncEvents: [NOTIFY_USER], syncEvents: []) {
+type ExportProducts @doc(category: "Products") @webhookEventsInfo(asyncEvents: [NOTIFY_USER, PRODUCT_EXPORT_COMPLETED], syncEvents: []) {
   """
   The newly created export file job which is responsible for export data.
   """
@@ -28693,8 +28713,9 @@ Requires one of the following permissions: AUTHENTICATED_USER.
 
 Triggers the following webhook events:
 - NOTIFY_USER (async): A notification for account email change.
+- ACCOUNT_CHANGE_EMAIL_REQUESTED (async): An account email change was requested.
 """
-type RequestEmailChange @doc(category: "Users") @webhookEventsInfo(asyncEvents: [NOTIFY_USER], syncEvents: []) {
+type RequestEmailChange @doc(category: "Users") @webhookEventsInfo(asyncEvents: [NOTIFY_USER, ACCOUNT_CHANGE_EMAIL_REQUESTED], syncEvents: []) {
   """A user instance."""
   user: User
   accountErrors: [AccountError!]! @deprecated(reason: "This field will be removed in Saleor 4.0. Use `errors` field instead.")
@@ -28870,8 +28891,9 @@ Requires one of the following permissions: AUTHENTICATED_USER.
 
 Triggers the following webhook events:
 - NOTIFY_USER (async): A notification for account delete request.
+- ACCOUNT_DELETE_REQUESTED (async): An account delete requested.
 """
-type AccountRequestDeletion @doc(category: "Users") @webhookEventsInfo(asyncEvents: [NOTIFY_USER], syncEvents: []) {
+type AccountRequestDeletion @doc(category: "Users") @webhookEventsInfo(asyncEvents: [NOTIFY_USER, ACCOUNT_DELETE_REQUESTED], syncEvents: []) {
   accountErrors: [AccountError!]! @deprecated(reason: "This field will be removed in Saleor 4.0. Use `errors` field instead.")
   errors: [AccountError!]!
 }
@@ -29546,7 +29568,7 @@ type PermissionGroupDelete @doc(category: "Users") @webhookEventsInfo(asyncEvent
   group: Group
 }
 
-type Subscription {
+type Subscription @doc(category: "Miscellaneous") {
   """
   Look up subscription event.
   
@@ -29688,7 +29710,7 @@ Event sent when account email is changed.
 
 Added in Saleor 3.15.
 """
-type AccountEmailChanged implements Event {
+type AccountEmailChanged implements Event @doc(category: "Users") {
   """Time of the event."""
   issuedAt: DateTime
 
@@ -29725,7 +29747,7 @@ Event sent when setting a new password is requested.
 
 Added in Saleor 3.15.
 """
-type AccountSetPasswordRequested implements Event {
+type AccountSetPasswordRequested implements Event @doc(category: "Users") {
   """Time of the event."""
   issuedAt: DateTime
 
@@ -29759,7 +29781,7 @@ Event sent when account is confirmed.
 
 Added in Saleor 3.15.
 """
-type AccountConfirmed implements Event {
+type AccountConfirmed implements Event @doc(category: "Users") {
   """Time of the event."""
   issuedAt: DateTime
 
@@ -29827,7 +29849,7 @@ Event sent when account is deleted.
 
 Added in Saleor 3.15.
 """
-type AccountDeleted implements Event {
+type AccountDeleted implements Event @doc(category: "Users") {
   """Time of the event."""
   issuedAt: DateTime
 
@@ -30887,7 +30909,7 @@ Added in Saleor 3.14.
 
 Note: this API is currently in Feature Preview and can be subject to changes at later point.
 """
-type OrderBulkCreated implements Event {
+type OrderBulkCreated implements Event @doc(category: "Orders") {
   """Time of the event."""
   issuedAt: DateTime
 
@@ -31080,6 +31102,28 @@ type ProductMetadataUpdated implements Event @doc(category: "Products") {
 
   """The category of the product."""
   category: Category
+}
+
+"""
+Event sent when product export is completed.
+
+Added in Saleor 3.16.
+"""
+type ProductExportCompleted implements Event @doc(category: "Products") {
+  """Time of the event."""
+  issuedAt: DateTime
+
+  """Saleor version that triggered the event."""
+  version: String
+
+  """The user or application that triggered the event."""
+  issuingPrincipal: IssuingPrincipal
+
+  """The application receiving the webhook."""
+  recipient: App
+
+  """The export file for products."""
+  export: ExportFile
 }
 
 """
@@ -32382,7 +32426,7 @@ Event sent when setting a new password for staff is requested.
 
 Added in Saleor 3.15.
 """
-type StaffSetPasswordRequested implements Event {
+type StaffSetPasswordRequested implements Event @doc(category: "Users") {
   """Time of the event."""
   issuedAt: DateTime
 
@@ -32438,7 +32482,7 @@ Event sent when new translation is created.
 
 Added in Saleor 3.2.
 """
-type TranslationCreated implements Event {
+type TranslationCreated implements Event @doc(category: "Miscellaneous") {
   """Time of the event."""
   issuedAt: DateTime
 
@@ -32462,7 +32506,7 @@ Event sent when translation is updated.
 
 Added in Saleor 3.2.
 """
-type TranslationUpdated implements Event {
+type TranslationUpdated implements Event @doc(category: "Miscellaneous") {
   """Time of the event."""
   issuedAt: DateTime
 
@@ -32672,7 +32716,7 @@ Event sent when thumbnail is created.
 
 Added in Saleor 3.12.
 """
-type ThumbnailCreated implements Event {
+type ThumbnailCreated implements Event @doc(category: "Miscellaneous") {
   """Time of the event."""
   issuedAt: DateTime
 
@@ -32901,6 +32945,13 @@ type TransactionAction @doc(category: "Payments") {
 
   """Transaction request amount. Null when action type is VOID."""
   amount: PositiveDecimal
+
+  """
+  Currency code.
+  
+  Added in Saleor 3.16.
+  """
+  currency: String!
 }
 
 """

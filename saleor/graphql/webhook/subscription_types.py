@@ -53,11 +53,13 @@ from ..core.descriptions import (
 from ..core.doc_category import (
     DOC_CATEGORY_CHECKOUT,
     DOC_CATEGORY_GIFT_CARDS,
+    DOC_CATEGORY_MISC,
     DOC_CATEGORY_ORDERS,
     DOC_CATEGORY_PAYMENTS,
     DOC_CATEGORY_PRODUCTS,
     DOC_CATEGORY_SHIPPING,
     DOC_CATEGORY_TAXES,
+    DOC_CATEGORY_USERS,
 )
 from ..core.scalars import JSON, PositiveDecimal
 from ..core.types import NonNullList, SubscriptionObjectType
@@ -187,6 +189,7 @@ class AccountConfirmed(SubscriptionObjectType, AccountOperationBase):
         enable_dry_run = False
         interfaces = (Event,)
         description = "Event sent when account is confirmed." + ADDED_IN_315
+        doc_category = DOC_CATEGORY_USERS
 
 
 class AccountConfirmationRequested(SubscriptionObjectType, AccountOperationBase):
@@ -230,6 +233,7 @@ class AccountEmailChanged(SubscriptionObjectType, AccountOperationBase):
         enable_dry_run = False
         interfaces = (Event,)
         description = "Event sent when account email is changed." + ADDED_IN_315
+        doc_category = DOC_CATEGORY_USERS
 
 
 class AccountSetPasswordRequested(SubscriptionObjectType, AccountOperationBase):
@@ -240,6 +244,7 @@ class AccountSetPasswordRequested(SubscriptionObjectType, AccountOperationBase):
         description = (
             "Event sent when setting a new password is requested." + ADDED_IN_315
         )
+        doc_category = DOC_CATEGORY_USERS
 
 
 class AccountDeleteRequested(SubscriptionObjectType, AccountOperationBase):
@@ -256,6 +261,7 @@ class AccountDeleted(SubscriptionObjectType, AccountOperationBase):
         enable_dry_run = False
         interfaces = (Event,)
         description = "Event sent when account is deleted." + ADDED_IN_315
+        doc_category = DOC_CATEGORY_USERS
 
 
 class AddressBase(AbstractType):
@@ -626,6 +632,7 @@ class OrderBulkCreated(SubscriptionObjectType):
         description = (
             "Event sent when orders are imported." + ADDED_IN_314 + PREVIEW_FEATURE
         )
+        doc_category = DOC_CATEGORY_ORDERS
 
 
 class DraftOrderCreated(SubscriptionObjectType, OrderBase):
@@ -1050,6 +1057,25 @@ class ProductVariantStockUpdated(SubscriptionObjectType, ProductVariantBase):
     def resolve_warehouse(root, info: ResolveInfo):
         _, stock = root
         return WarehouseByIdLoader(info.context).load(stock.warehouse_id)
+
+
+class ProductExportCompleted(SubscriptionObjectType):
+    export = graphene.Field(
+        "saleor.graphql.csv.types.ExportFile",
+        description="The export file for products.",
+    )
+
+    class Meta:
+        root_type = "ExportFile"
+        enable_dry_run = True
+        interfaces = (Event,)
+        description = "Event sent when product export is completed." + ADDED_IN_316
+        doc_category = DOC_CATEGORY_PRODUCTS
+
+    @staticmethod
+    def resolve_export(root, info: ResolveInfo):
+        _, export_file = root
+        return export_file
 
 
 class SaleBase(AbstractType):
@@ -1639,6 +1665,7 @@ class StaffSetPasswordRequested(SubscriptionObjectType, AccountOperationBase):
             "Event sent when setting a new password for staff is requested."
             + ADDED_IN_315
         )
+        doc_category = DOC_CATEGORY_USERS
 
 
 class TransactionAction(SubscriptionObjectType, AbstractType):
@@ -1650,6 +1677,10 @@ class TransactionAction(SubscriptionObjectType, AbstractType):
     amount = PositiveDecimal(
         description="Transaction request amount. Null when action type is VOID.",
     )
+    currency = graphene.String(
+        description="Currency code." + ADDED_IN_316,
+        required=True,
+    )
 
     class Meta:
         doc_category = DOC_CATEGORY_PAYMENTS
@@ -1659,6 +1690,10 @@ class TransactionAction(SubscriptionObjectType, AbstractType):
         if root.action_value:
             return quantize_price(root.action_value, root.transaction.currency)
         return None
+
+    @staticmethod
+    def resolve_currency(root: TransactionActionData, _info: ResolveInfo):
+        return root.transaction.currency
 
 
 class TransactionActionBase(AbstractType):
@@ -2038,6 +2073,7 @@ class TranslationCreated(SubscriptionObjectType, TranslationBase):
         enable_dry_run = False
         interfaces = (Event,)
         description = "Event sent when new translation is created." + ADDED_IN_32
+        doc_category = DOC_CATEGORY_MISC
 
 
 class TranslationUpdated(SubscriptionObjectType, TranslationBase):
@@ -2046,6 +2082,7 @@ class TranslationUpdated(SubscriptionObjectType, TranslationBase):
         enable_dry_run = False
         interfaces = (Event,)
         description = "Event sent when translation is updated." + ADDED_IN_32
+        doc_category = DOC_CATEGORY_MISC
 
 
 class VoucherBase(AbstractType):
@@ -2327,6 +2364,9 @@ class Subscription(SubscriptionObjectType):
         description="Look up subscription event." + ADDED_IN_32,
     )
 
+    class Meta:
+        doc_category = DOC_CATEGORY_MISC
+
     @staticmethod
     def resolve_event(root, info: ResolveInfo):
         return Observable.from_([root])
@@ -2345,6 +2385,7 @@ class ThumbnailCreated(SubscriptionObjectType):
         enable_dry_run = False
         interfaces = (Event,)
         description = "Event sent when thumbnail is created." + ADDED_IN_312
+        doc_category = DOC_CATEGORY_MISC
 
     @staticmethod
     def resolve_id(root, info: ResolveInfo):
@@ -2432,6 +2473,7 @@ WEBHOOK_TYPES_MAP = {
     WebhookEventAsyncType.PRODUCT_UPDATED: ProductUpdated,
     WebhookEventAsyncType.PRODUCT_DELETED: ProductDeleted,
     WebhookEventAsyncType.PRODUCT_METADATA_UPDATED: ProductMetadataUpdated,
+    WebhookEventAsyncType.PRODUCT_EXPORT_COMPLETED: ProductExportCompleted,
     WebhookEventAsyncType.PRODUCT_MEDIA_CREATED: ProductMediaCreated,
     WebhookEventAsyncType.PRODUCT_MEDIA_UPDATED: ProductMediaUpdated,
     WebhookEventAsyncType.PRODUCT_MEDIA_DELETED: ProductMediaDeleted,
