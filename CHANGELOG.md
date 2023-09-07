@@ -50,13 +50,16 @@ All notable, unreleased changes to this project will be documented in this file.
 - Fix error in variant available stock calculation - 13593 by @awaisdar001
 - Add missing currency in action for transaction requests - 13786 by @AjmalPonneth
 - Fix giftcard code description - #13728 by @rafiwts
+
 - Change error message when denying a permission - #13334 by @rafiwts
 - Add filter by slugs to attribute choices - #13761 by @rafiwts
 - Add a new `product` field on `AssignedProductAttributeValue`. First part of a simplification of Attribute - Product relation from #12881. by @aniav
 - Lazy legacy webhooks payload generation - #13758 by @maarcingebala
 - Fix NoneType in `prodcutChannelsListingUpdate` - #13694 by @Manoj-gowra
+- Extended `AttributeValueTranslation.name` to 250 characters - #13776 by @aniav
+- Add a new `page` field on `AssignedPageAttributeValue`. First stage (migration) of a simplification of Attribute - Page relation from #13403. by michal-macioszczyk
 
-# 3.15.0 [Unreleased]
+# 3.15.0
 
 ### Breaking changes
 
@@ -142,7 +145,7 @@ Shipping methods can be removed by the user after it has been assigned to a chec
   - Add `metadata` to `AddressInput` field
 - Add support for unhandled field `Shop.trackInventoryByDefault` for `productVariantCreate` and `productVariantBulkCreate` - #13492 by @Smit-Parmar
 - Add `storedPaymentMethods` field to `User` and `Checkout` type - #13581
-- - Add `AttributeBulkUpdate` mutation - #13532 by @SzymJ
+- Add `AttributeBulkUpdate` mutation - #13532 by @SzymJ
 
 - Better checkout error feedback - #13458 by @korycins
   - Add `Checkout.problems` field
