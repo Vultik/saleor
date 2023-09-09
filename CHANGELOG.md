@@ -13,6 +13,13 @@ All notable, unreleased changes to this project will be documented in this file.
     in 3.17. Use `PaymentSettings.defaultTransactionFlowStrategy` instead.
   - Change in the CSV export. It will now use empty string for empty attribute values instead of a single whitespace value.
 
+- Add IP filter feature to backend HTTP requests - #13891 by @NyanKiyoshi
+
+  This rejects server-side HTTP requests (webhooks, OIDC, etc.) if they try to communicate
+  with private or loopback IP addresses, to change the default behavior,
+  refer to `HTTP_IP_FILTER_ENABLED`, and `HTTP_IP_FILTER_ALLOW_LOOPBACK_IPS` settings
+  for more details.
+
 ### GraphQL API
 
 - Add `customerIpAddress` to `transactionInitialize` and `transactionProcess` mutations - #13718 by @korycins
@@ -22,6 +29,9 @@ All notable, unreleased changes to this project will be documented in this file.
 - Add `externalReference` to `updateWarehouse`. It will allow update warehouse by
   external reference. - #13342 by @Smit-Parmar
 - Add Filter warehouses by metadata - #13345 by @Smit-Parmar
+- Add API for tokenizing payment methods - #13879 by @korycins
+
+
 - Deprecate the `NOTIFY_USER` webhook and the `externalNotificationTrigger` mutation - #13881 by @maarcingebala
   - See the docs for more details about migrating from the `NOTIFY_USER` webhook to other events: https://docs.saleor.io/docs/next/upgrade-guides/notify-user-deprecation
 
@@ -39,6 +49,7 @@ All notable, unreleased changes to this project will be documented in this file.
   - Event sent when CSV export for products is completed.
 - Add `FULFILLMENT_TRACKING_NUMBER_UPDATED` webhook - #13708, by @Air-t
   - Called after `fulfillmentUpdateTracking` or `orderFulfill` mutation if tracking number is updated.
+- Add support for tokenizing payment methods via sync webhooks - #13879 by @korycins
 - Add missing `FULFILLMENT_CREATED` event call to `automatically_fulfill_digital_lines_with_fulfillment_created` action. - #13823, by @Air-t
 
 ### Other changes
@@ -54,6 +65,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Fix NoneType in `prodcutChannelsListingUpdate` - #13694 by @Manoj-gowra
 - Extended `AttributeValueTranslation.name` to 250 characters - #13776 by @aniav
 - Add a new `page` field on `AssignedPageAttributeValue`. First stage (migration) of a simplification of Attribute - Page relation from #13403. by michal-macioszczyk
+- Update workflow actions with poetry dependencies - #13736 by @rafiwts
 
 # 3.15.0
 
