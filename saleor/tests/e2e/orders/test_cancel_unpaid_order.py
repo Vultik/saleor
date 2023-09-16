@@ -2,16 +2,19 @@ import pytest
 
 from .. import DEFAULT_ADDRESS
 from ..product.utils.preparing_product import prepare_product
-from ..shop.utils.preparing_shop import prepare_shop
+from ..shop.utils import prepare_shop
 from ..utils import assign_permissions
-from .utils.draft_order_complete import draft_order_complete
-from .utils.draft_order_create import draft_order_create
-from .utils.draft_order_update import draft_order_update
-from .utils.order_lines_create import order_lines_create
+from .utils import (
+    draft_order_complete,
+    draft_order_create,
+    draft_order_update,
+    order_cancel,
+    order_lines_create,
+)
 
 
 @pytest.mark.e2e
-def test_order_staff_can_overwrite_prices_CORE_0202(
+def test_cancel_unpaid_order_CORE_0204(
     e2e_staff_api_client,
     permission_manage_products,
     permission_manage_channels,
@@ -29,7 +32,7 @@ def test_order_staff_can_overwrite_prices_CORE_0202(
     ]
     assign_permissions(e2e_staff_api_client, permissions)
 
-    regular_variant_price = 10
+    price = 10
 
     (
         warehouse_id,
@@ -46,7 +49,7 @@ def test_order_staff_can_overwrite_prices_CORE_0202(
         e2e_staff_api_client,
         warehouse_id,
         channel_id,
-        regular_variant_price,
+        price,
     )
 
     # Step 1 - Create draft order
@@ -63,14 +66,8 @@ def test_order_staff_can_overwrite_prices_CORE_0202(
     order_id = data["order"]["id"]
     assert order_id is not None
 
-    # Step 2 - Add lines to the order and overwrite variant's price
-    lines = [
-        {
-            "variantId": product_variant_id,
-            "quantity": 1,
-            "price": 3,
-        }
-    ]
+    # Step 2 - Add lines to the order
+    lines = [{"variantId": product_variant_id, "quantity": 1}]
     order_lines = order_lines_create(
         e2e_staff_api_client,
         order_id,
@@ -78,8 +75,6 @@ def test_order_staff_can_overwrite_prices_CORE_0202(
     )
     order_product_variant_id = order_lines["order"]["lines"][0]["variant"]["id"]
     assert order_product_variant_id == product_variant_id
-    new_price = order_lines["order"]["lines"][0]["unitPrice"]["gross"]["amount"]
-    assert new_price != regular_variant_price
 
     # Step 3 - Update order's shipping method
     input = {"shippingMethod": shipping_method_id}
@@ -92,14 +87,15 @@ def test_order_staff_can_overwrite_prices_CORE_0202(
     assert order_shipping_id is not None
 
     # Step 4 - Complete the order
-    order = draft_order_complete(
-        e2e_staff_api_client,
-        order_id,
-    )
+    order = draft_order_complete(e2e_staff_api_client, order_id)
     order_complete_id = order["order"]["id"]
     assert order_complete_id == order_id
     order_line = order["order"]["lines"][0]
-    order_variant_price = order_line["unitPrice"]["gross"]["amount"]
-    assert order_variant_price != regular_variant_price
     assert order_line["productVariantId"] == product_variant_id
     assert order["order"]["status"] == "UNFULFILLED"
+
+    # Step 5 - Cancel the order
+    cancelled_order = order_cancel(e2e_staff_api_client, order_id)
+    assert cancelled_order["order"]["id"] == order_id
+    assert cancelled_order["order"]["paymentStatus"] == "NOT_CHARGED"
+    assert cancelled_order["order"]["status"] == "CANCELED"
