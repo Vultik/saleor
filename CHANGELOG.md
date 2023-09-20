@@ -2,11 +2,22 @@
 
 All notable, unreleased changes to this project will be documented in this file. For the released changes, please visit the [Releases](https://github.com/saleor/saleor/releases) page.
 
-# 3.16.0 [Unreleased]
+# 3.17.0 [Unreleased]
+
+### Breaking changes
+
+### GraphQL API
+
+### Saleor Apps
+
+### Other changes
+
+# 3.16.0
 
 ### Breaking changes
 
 - **Feature preview breaking change**:
+
   - Deprecate `OrderSettingsInput.defaultTransactionFlowStrategy`. It will be removed
     in 3.17. Use `PaymentSettingsInput.defaultTransactionFlowStrategy` instead.
   - Deprecate `OrderSettings.defaultTransactionFlowStrategy`. It will be removed
@@ -31,7 +42,6 @@ All notable, unreleased changes to this project will be documented in this file.
 - Add Filter warehouses by metadata - #13345 by @Smit-Parmar
 - Add API for tokenizing payment methods - #13879 by @korycins
 
-
 - Deprecate the `NOTIFY_USER` webhook and the `externalNotificationTrigger` mutation - #13881 by @maarcingebala
   - See the docs for more details about migrating from the `NOTIFY_USER` webhook to other events: https://docs.saleor.io/docs/next/upgrade-guides/notify-user-deprecation
 
@@ -51,6 +61,7 @@ All notable, unreleased changes to this project will be documented in this file.
   - Called after `fulfillmentUpdateTracking` or `orderFulfill` mutation if tracking number is updated.
 - Add support for tokenizing payment methods via sync webhooks - #13879 by @korycins
 - Add missing `FULFILLMENT_CREATED` event call to `automatically_fulfill_digital_lines_with_fulfillment_created` action. - #13823, by @Air-t
+- Increase timeout of shipping filtering webhooks: `ORDER_FILTER_SHIPPING_METHODS` and `CHECKOUT_FILTER_SHIPPING_METHODS` to 20 seconds - #13989 by @maarcingebala
 
 ### Other changes
 
