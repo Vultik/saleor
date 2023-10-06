@@ -77,8 +77,15 @@ All notable, unreleased changes to this project will be documented in this file.
     - `SaleToggle` - Use `PromotionStarted` and `PromotionEnded` instead.
 
 ### Breaking changes
+- Deprecate `external_url` on `Invoice` GraphQL type in favour of `url`. No matter if the invoice is stored on Saleor or is a link to an external invoice it will get returned in the `url` field.
 
 ### GraphQL API
+
+- **Feature preview change**:
+  - Order bulk create allow to import archive orders - #14177 by @kadewu
+    - `orderBulkCreate` now will attempt to create order with `IGNORE_FAILED` policy even if:
+      - `User` cannot be resolved and `email` wasn't provided.
+      - `Variant` wasn't provided but `product_name` was provided.
 
 ### Saleor Apps
 
