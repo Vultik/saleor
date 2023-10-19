@@ -1,14 +1,7 @@
 import pytest
 
-from ..product.utils import (
-    create_category,
-    create_product,
-    create_product_channel_listing,
-    create_product_type,
-    create_product_variant,
-    create_product_variant_channel_listing,
-    update_product_type,
-)
+from ..product.utils import update_product
+from ..product.utils.preparing_product import prepare_product
 from ..shop.utils.preparing_shop import prepare_shop
 from ..taxes.utils import (
     create_tax_class,
@@ -30,7 +23,7 @@ def prepare_tax_configuration(
     channel_slug,
     country_code,
     country_tax_rate,
-    product_type_tax_rate,
+    product_tax_rate,
     prices_entered_with_tax,
 ):
     tax_config_data = get_tax_configurations(e2e_staff_api_client)
@@ -52,72 +45,19 @@ def prepare_tax_configuration(
         [{"rate": country_tax_rate}],
     )
 
-    country_rates = [{"countryCode": country_code, "rate": product_type_tax_rate}]
+    country_rates = [{"countryCode": country_code, "rate": product_tax_rate}]
     tax_class_data = create_tax_class(
         e2e_staff_api_client,
-        "Product type tax class",
+        "Product tax class",
         country_rates,
     )
     tax_class_id = tax_class_data["id"]
 
-    return country_tax_rate, product_type_tax_rate, tax_class_id
-
-
-def prepare_product(
-    e2e_staff_api_client,
-    warehouse_id,
-    channel_id,
-    variant_price,
-):
-    product_type_data = create_product_type(
-        e2e_staff_api_client,
-    )
-    product_type_id = product_type_data["id"]
-
-    category_data = create_category(e2e_staff_api_client)
-    category_id = category_data["id"]
-
-    product_data = create_product(
-        e2e_staff_api_client,
-        product_type_id,
-        category_id,
-    )
-    product_id = product_data["id"]
-
-    create_product_channel_listing(
-        e2e_staff_api_client,
-        product_id,
-        channel_id,
-    )
-
-    stocks = [
-        {
-            "warehouse": warehouse_id,
-            "quantity": 5,
-        }
-    ]
-    product_variant_data = create_product_variant(
-        e2e_staff_api_client,
-        product_id,
-        stocks=stocks,
-    )
-    product_variant_id = product_variant_data["id"]
-
-    product_variant_channel_listing_data = create_product_variant_channel_listing(
-        e2e_staff_api_client,
-        product_variant_id,
-        channel_id,
-        variant_price,
-    )
-    product_variant_price = product_variant_channel_listing_data["channelListings"][0][
-        "price"
-    ]["amount"]
-
-    return product_variant_id, product_variant_price, product_type_id
+    return country_tax_rate, product_tax_rate, tax_class_id
 
 
 @pytest.mark.e2e
-def test_checkout_calculate_simple_tax_based_on_product_type_tax_class_CORE_2003(
+def test_checkout_calculate_simple_tax_based_on_product_tax_class_CORE_2005(
     e2e_staff_api_client,
     e2e_not_logged_api_client,
     permission_manage_products,
@@ -143,24 +83,24 @@ def test_checkout_calculate_simple_tax_based_on_product_type_tax_class_CORE_2003
         shipping_method_id,
     ) = prepare_shop(e2e_staff_api_client)
 
-    country_tax_rate, product_type_tax_rate, tax_class_id = prepare_tax_configuration(
+    country_tax_rate, product_tax_rate, tax_class_id = prepare_tax_configuration(
         e2e_staff_api_client,
         channel_slug,
         country_code="US",
-        country_tax_rate=10,
-        product_type_tax_rate=8,
-        prices_entered_with_tax=False,
+        country_tax_rate=23,
+        product_tax_rate=5,
+        prices_entered_with_tax=True,
     )
 
-    variant_price = "155.88"
-    (product_variant_id, product_variant_price, product_type_id) = prepare_product(
+    variant_price = "25.55"
+    (product_id, product_variant_id, product_variant_price) = prepare_product(
         e2e_staff_api_client,
         warehouse_id,
         channel_id,
         variant_price,
     )
-    product_type_tax_class = {"taxClass": tax_class_id}
-    update_product_type(e2e_staff_api_client, product_type_id, product_type_tax_class)
+    product_tax_class = {"taxClass": tax_class_id}
+    update_product(e2e_staff_api_client, product_id, input=product_tax_class)
 
     # Step 1 - Create checkout and check prices
     lines = [
@@ -181,12 +121,15 @@ def test_checkout_calculate_simple_tax_based_on_product_type_tax_class_CORE_2003
     checkout_id = checkout_data["id"]
 
     assert checkout_data["isShippingRequired"] is True
-    variant_price = float(variant_price)
-    assert checkout_data["totalPrice"]["net"]["amount"] == variant_price
-    calculated_tax = round(variant_price * (product_type_tax_rate / 100), 2)
+    product_variant_price = float(product_variant_price)
+    assert checkout_data["totalPrice"]["gross"]["amount"] == product_variant_price
+    calculated_tax = round(
+        (product_variant_price * product_tax_rate) / (100 + product_tax_rate),
+        2,
+    )
     assert checkout_data["totalPrice"]["tax"]["amount"] == calculated_tax
-    assert checkout_data["totalPrice"]["gross"]["amount"] == round(
-        variant_price + calculated_tax, 2
+    assert checkout_data["totalPrice"]["net"]["amount"] == round(
+        product_variant_price - calculated_tax, 2
     )
     shipping_method_id = checkout_data["shippingMethods"][0]["id"]
 
@@ -197,19 +140,21 @@ def test_checkout_calculate_simple_tax_based_on_product_type_tax_class_CORE_2003
         shipping_method_id,
     )
     shipping_price = checkout_data["deliveryMethod"]["price"]["amount"]
+    shipping_price = float(shipping_price)
     assert checkout_data["deliveryMethod"]["id"] == shipping_method_id
-    assert checkout_data["shippingPrice"]["net"]["amount"] == float(shipping_price)
-    shipping_tax = round((float(shipping_price) * (country_tax_rate / 100)), 2)
+    assert checkout_data["shippingPrice"]["gross"]["amount"] == shipping_price
+    shipping_tax = round(
+        (shipping_price * country_tax_rate) / (100 + country_tax_rate), 2
+    )
     assert checkout_data["shippingPrice"]["tax"]["amount"] == shipping_tax
-    assert (
-        checkout_data["shippingPrice"]["gross"]["amount"]
-        == float(shipping_price) + shipping_tax
+    assert checkout_data["shippingPrice"]["net"]["amount"] == round(
+        shipping_price - shipping_tax, 2
     )
 
     total_tax = calculated_tax + shipping_tax
     assert checkout_data["totalPrice"]["tax"]["amount"] == total_tax
     total_gross_amount = checkout_data["totalPrice"]["gross"]["amount"]
-    calculated_total = round(variant_price + shipping_price + total_tax, 2)
+    calculated_total = round(product_variant_price + shipping_price, 2)
     assert total_gross_amount == calculated_total
 
     # Step 3 - Create payment for checkout.
