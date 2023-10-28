@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional
 
 import graphene
 from django.core.exceptions import ValidationError
@@ -53,7 +53,7 @@ class SaleBulkDelete(ModelBulkDeleteMutation):
     @classmethod
     def perform_mutation(  # type: ignore[override]
         cls, _root, info: ResolveInfo, /, *, ids, **data
-    ) -> Tuple[int, Optional[ValidationError]]:
+    ) -> tuple[int, Optional[ValidationError]]:
         """Perform a mutation that deletes a list of model instances."""
         try:
             instances = cls.get_promotion_instances(ids)
@@ -97,7 +97,9 @@ class SaleBulkDelete(ModelBulkDeleteMutation):
         webhooks = get_webhooks_for_event(WebhookEventAsyncType.SALE_DELETED)
         manager = get_plugin_manager_promise(info.context).get()
         for sale, catalogue_info in sales_and_catalogue_infos:
-            manager.sale_deleted(sale, catalogue_info, webhooks=webhooks)
+            cls.call_event(
+                manager.sale_deleted, sale, catalogue_info, webhooks=webhooks
+            )
 
         update_products_discounted_prices_for_promotion_task.delay(list(product_ids))
 
@@ -154,4 +156,4 @@ class VoucherBulkDelete(ModelBulkDeleteMutation):
         webhooks = get_webhooks_for_event(WebhookEventAsyncType.VOUCHER_DELETED)
         manager = get_plugin_manager_promise(info.context).get()
         for voucher in vouchers:
-            manager.voucher_deleted(voucher, webhooks=webhooks)
+            cls.call_event(manager.voucher_deleted, voucher, webhooks=webhooks)
