@@ -3,6 +3,14 @@
 All notable, unreleased changes to this project will be documented in this file. For the released changes, please visit the [Releases](https://github.com/saleor/saleor/releases) page.
 
 # 3.18.0 [Unreleased]
+
+### Highlights
+- Allow including draft orders in voucher usage. New `includeDraftOrderInVoucherUsage` flag allows defining if vouchers used in draft orders should be counted into voucher usage. - #14288 by @zedzior, @IKarbowiak, @michal-macioszczyk
+
+  - Add `includeDraftOrderInVoucherUsage` to `OrderSettings`
+  - Add `includeDraftOrderInVoucherUsage` to `OrderSettingsInput`
+
+
 ### Breaking changes
 - Optimize number of queries in bulk mutations when calling webhooks. This change affects only users of open-source Saleor, who have their own custom plugin implementations. To adjust to this change, the `webhooks` parameter should be added to any of the affected method. Affected methods:
   - `attribute_updated`
@@ -10,6 +18,7 @@ All notable, unreleased changes to this project will be documented in this file.
   - `attribute_value_deleted`
   - `promotion_deleted`
   - `staff_deleted`
+- Saleor will no longer reattempt delivery for webhooks that return non-transient HTTP errors (400, 404 etc.) or redirects - #14566 by @patrys
 
 ### GraphQL API
 - Fix draft order voucher assignment - #14336 by @IKarbowiak
@@ -31,6 +40,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Add transaction items deletion to cleardb command. - #14198 by @jakubkuc
 - Added validation for timestamp comparison #14025 by @ritanjandawn
 - Page -> Attributes refactor. The goal is to simplify the attribute models. The current attribute model relations are complex and really hard to understand. - #13621
+- `requirements.txt` and `requirements_dev.txt` were dropped in favor of only supporting `poetry` - #14611 by @patrys
 
 # 3.17.0
 
