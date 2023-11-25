@@ -16,6 +16,9 @@ All notable, unreleased changes to this project will be documented in this file.
 ### Saleor Apps
 
 ### Other changes
+- Add missing descriptions to order module - #14845 by @DevilsAutumn
+
+- Unify how undiscounted prices are handled in orders and checkouts - #14780 by @jakubkuc
 
 # 3.18.0
 
@@ -398,6 +401,7 @@ Shipping methods can be removed by the user after it has been assigned to a chec
 - Add missing descriptions to payment module - #13546 by @devilsautumn
 - Fix `NOTIFY_USER` allow to create webhook with only one event - #13584 by @Air-t
 - Add Index for 'Created' field of the Order Model - #13682 by @ritanjandawn
+- Add missing descriptions to giftcard module - #14847 by @devilsautumn
 
 # 3.14.0
 
