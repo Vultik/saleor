@@ -9,6 +9,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Include transaction item in refund flow - #15590 by @korycins
 
 ### Breaking changes
+- Remove the `anonymize` plugin. Use `saleor/core/utils/anonymization` code instead. - by @aniav
 
 ### GraphQL API
 - Add `translatableContent` to all translation types; add translated object id to all translatable content types - #15617 by @zedzior
@@ -24,6 +25,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Calculate order promotions in draft orders - #15459 by @zedzior
 - Prevent name overwriting of Product Variants when Updating Product Types - #15670 by @teddyondieki
 - Added support for the `BrokerProperties` custom header to webhooks to support Azure Service Bus - #15899 by @patrys
+- Extend valid address values - #15877 by @zedzior
 
 # 3.19.0
 
