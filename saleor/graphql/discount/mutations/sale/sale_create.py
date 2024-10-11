@@ -13,7 +13,7 @@ from .....permission.enums import DiscountPermissions
 from .....webhook.event_types import WebhookEventAsyncType
 from ....channel import ChannelContext
 from ....core import ResolveInfo
-from ....core.descriptions import ADDED_IN_31, DEPRECATED_IN_3X_MUTATION
+from ....core.descriptions import DEPRECATED_IN_3X_MUTATION
 from ....core.doc_category import DOC_CATEGORY_DISCOUNTS
 from ....core.mutations import ModelMutation
 from ....core.scalars import DateTime, PositiveDecimal
@@ -38,7 +38,7 @@ class SaleInput(BaseInputObjectType):
     )
     variants = NonNullList(
         graphene.ID,
-        descriptions="Product variant related to the discount." + ADDED_IN_31,
+        descriptions="Product variant related to the discount.",
         name="variants",
     )
     categories = NonNullList(
@@ -106,9 +106,9 @@ class SaleCreate(ModelMutation):
         end_date = instance.end_date
         try:
             validate_end_is_after_start(start_date, end_date)
-        except ValidationError as error:
-            error.code = DiscountErrorCode.INVALID.value
-            raise ValidationError({"end_date": error})
+        except ValidationError as e:
+            e.code = DiscountErrorCode.INVALID.value
+            raise ValidationError({"end_date": e}) from e
 
     @classmethod
     def perform_mutation(cls, _root, info: ResolveInfo, /, **data):
