@@ -1,11 +1,10 @@
-from datetime import datetime
+import datetime
 from decimal import Decimal
 from unittest.mock import patch
 from uuid import uuid4
 
 import graphene
 import pytest
-import pytz
 from django.utils import timezone
 from freezegun import freeze_time
 
@@ -748,15 +747,14 @@ def test_transaction_event_report_event_already_exists_updates_available_actions
     response = get_graphql_content(response)
     transaction_report_data = response["data"]["transactionEventReport"]
     assert transaction_report_data["alreadyProcessed"] is True
-    assert set(transaction_report_data["transaction"]["actions"]) == set(
-        [
-            TransactionActionEnum.REFUND.name,
-            TransactionActionEnum.CHARGE.name,
-        ]
-    )
-    assert set(transaction.available_actions) == set(
-        [TransactionActionEnum.REFUND.value, TransactionActionEnum.CHARGE.value]
-    )
+    assert set(transaction_report_data["transaction"]["actions"]) == {
+        TransactionActionEnum.REFUND.name,
+        TransactionActionEnum.CHARGE.name,
+    }
+    assert set(transaction.available_actions) == {
+        TransactionActionEnum.REFUND.value,
+        TransactionActionEnum.CHARGE.value,
+    }
 
 
 def test_event_already_exists_do_not_overwrite_actions_when_not_provided_in_input(
@@ -827,15 +825,14 @@ def test_event_already_exists_do_not_overwrite_actions_when_not_provided_in_inpu
     response = get_graphql_content(response)
     transaction_report_data = response["data"]["transactionEventReport"]
     assert transaction_report_data["alreadyProcessed"] is True
-    assert set(transaction_report_data["transaction"]["actions"]) == set(
-        [
-            TransactionActionEnum.REFUND.name,
-            TransactionActionEnum.CHARGE.name,
-        ]
-    )
-    assert set(transaction.available_actions) == set(
-        [TransactionActionEnum.REFUND.value, TransactionActionEnum.CHARGE.value]
-    )
+    assert set(transaction_report_data["transaction"]["actions"]) == {
+        TransactionActionEnum.REFUND.name,
+        TransactionActionEnum.CHARGE.name,
+    }
+    assert set(transaction.available_actions) == {
+        TransactionActionEnum.REFUND.value,
+        TransactionActionEnum.CHARGE.value,
+    }
 
 
 def test_transaction_event_report_incorrect_amount_for_already_existing(
@@ -1296,7 +1293,7 @@ def test_transaction_event_updates_checkout_payment_statuses(
 
 @pytest.mark.parametrize(
     "current_last_transaction_modified_at",
-    [None, datetime(2000, 5, 31, 12, 0, 0, tzinfo=pytz.UTC)],
+    [None, datetime.datetime(2000, 5, 31, 12, 0, 0, tzinfo=datetime.UTC)],
 )
 @freeze_time("2018-05-31 12:00:01")
 def test_transaction_event_updates_checkout_last_transaction_modified_at(
@@ -2710,9 +2707,7 @@ def test_transaction_event_report_updates_granted_refund_status_when_needed(
     assert granted_refund.status == expected_status
 
 
-@pytest.mark.parametrize(
-    "event_type", [event_type for event_type in OPTIONAL_AMOUNT_EVENTS]
-)
+@pytest.mark.parametrize("event_type", list(OPTIONAL_AMOUNT_EVENTS))
 def test_transaction_event_report_missing_amount(
     event_type,
     transaction_item_generator,

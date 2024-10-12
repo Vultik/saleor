@@ -1,7 +1,6 @@
-from datetime import datetime
+import datetime
 
 import graphene
-import pytz
 from django.core.exceptions import ValidationError
 
 from ....core.tracing import traced_atomic_transaction
@@ -11,7 +10,7 @@ from ....permission.enums import PagePermissions
 from ...attribute.types import AttributeValueInput
 from ...attribute.utils import PageAttributeAssignmentMixin
 from ...core import ResolveInfo
-from ...core.descriptions import ADDED_IN_33, DEPRECATED_IN_3X_INPUT, RICH_CONTENT
+from ...core.descriptions import DEPRECATED_IN_3X_INPUT, RICH_CONTENT
 from ...core.doc_category import DOC_CATEGORY_PAGES
 from ...core.fields import JSONString
 from ...core.mutations import ModelMutation
@@ -36,9 +35,7 @@ class PageInput(BaseInputObjectType):
             "Use `publishedAt` field instead."
         )
     )
-    published_at = DateTime(
-        description="Publication date time. ISO 8601 standard." + ADDED_IN_33
-    )
+    published_at = DateTime(description="Publication date time. ISO 8601 standard.")
     seo = SeoInput(description="Search engine optimization fields.")
 
     class Meta:
@@ -103,7 +100,7 @@ class PageCreate(ModelMutation):
             "publication_date"
         )
         if is_published and not publication_date:
-            cleaned_input["published_at"] = datetime.now(pytz.UTC)
+            cleaned_input["published_at"] = datetime.datetime.now(tz=datetime.UTC)
         elif "publication_date" in cleaned_input or "published_at" in cleaned_input:
             cleaned_input["published_at"] = publication_date
 

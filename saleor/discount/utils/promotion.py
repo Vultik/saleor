@@ -1,13 +1,12 @@
 import datetime
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from collections.abc import Iterable, Iterator
 from decimal import Decimal
 from itertools import chain
-from typing import TYPE_CHECKING, Callable, Optional, Union, overload
+from typing import TYPE_CHECKING, Callable, NamedTuple, Optional, Union, overload
 from uuid import UUID
 
 import graphene
-import pytz
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Exists, OuterRef, QuerySet
@@ -334,8 +333,8 @@ def get_discount_translated_name(rule_info: "VariantPromotionRuleInfo"):
 
 
 def _update_promotion_discount(
-    rule: "PromotionRule",
-    rule_info: "VariantPromotionRuleInfo",
+    rule: PromotionRule,
+    rule_info: VariantPromotionRuleInfo,
     rule_discount_amount: Decimal,
     discount_to_update: Union[
         "CheckoutLineDiscount", "CheckoutDiscount", "OrderLineDiscount", "OrderDiscount"
@@ -368,15 +367,17 @@ def _update_promotion_discount(
 
 
 def get_best_rule(
-    rules: Iterable["PromotionRule"],
+    rules: Iterable[PromotionRule],
     channel: "Channel",
     country: str,
     subtotal: Money,
     database_connection_name: str = settings.DATABASE_CONNECTION_DEFAULT_NAME,
 ):
-    RuleDiscount = namedtuple(
-        "RuleDiscount", ["rule", "discount_amount", "gift_listing"]
-    )
+    class RuleDiscount(NamedTuple):
+        rule: PromotionRule
+        discount_amount: Money
+        gift_listing: Optional[ProductVariantChannelListing]
+
     currency_code = channel.currency_code
     rule_discounts: list[RuleDiscount] = []
     gift_rules = [rule for rule in rules if rule.reward_type == RewardType.GIFT]
@@ -488,7 +489,7 @@ def _get_available_for_purchase_variant_ids(
     channel: "Channel",
     database_connection_name: str = settings.DATABASE_CONNECTION_DEFAULT_NAME,
 ):
-    today = datetime.datetime.now(pytz.UTC)
+    today = datetime.datetime.now(tz=datetime.UTC)
     variants = ProductVariant.objects.using(database_connection_name).filter(
         id__in=available_variant_ids
     )
@@ -715,12 +716,12 @@ def update_rule_variant_relation(
     existing_rules_variants = PromotionRuleVariant.objects.filter(
         Exists(rules.filter(pk=OuterRef("promotionrule_id")))
     ).all()
-    new_rule_variant_set = set(
+    new_rule_variant_set = {
         (rv.promotionrule_id, rv.productvariant_id) for rv in new_rules_variants
-    )
-    existing_rule_variant_set = set(
+    }
+    existing_rule_variant_set = {
         (rv.promotionrule_id, rv.productvariant_id) for rv in existing_rules_variants
-    )
+    }
     # Assign new variants to promotion rules
     rules_variants_to_add = [
         rv

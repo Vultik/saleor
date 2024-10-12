@@ -17,7 +17,6 @@ from ...attribute.mutations import (
 from ...attribute.types import Attribute
 from ...channel import ChannelContext
 from ...core import ResolveInfo
-from ...core.descriptions import ADDED_IN_31
 from ...core.doc_category import DOC_CATEGORY_PRODUCTS
 from ...core.inputs import ReorderInput
 from ...core.mutations import BaseMutation
@@ -37,7 +36,6 @@ class ProductAttributeAssignInput(BaseInputObjectType):
         description=(
             "Whether attribute is allowed in variant selection. "
             f"Allowed types are: {AttributeInputType.ALLOWED_IN_VARIANT_SELECTION}."
-            + ADDED_IN_31
         ),
     )
 
@@ -52,7 +50,6 @@ class ProductAttributeAssignmentUpdateInput(BaseInputObjectType):
         description=(
             "Whether attribute is allowed in variant selection. "
             f"Allowed types are: {AttributeInputType.ALLOWED_IN_VARIANT_SELECTION}."
-            + ADDED_IN_31
         ),
     )
 
@@ -378,7 +375,6 @@ class ProductAttributeAssignmentUpdate(BaseMutation, VariantAssignmentValidation
     class Meta:
         description = (
             "Update attributes assigned to product variant for given product type."
-            + ADDED_IN_31
         )
         doc_category = DOC_CATEGORY_PRODUCTS
         error_type_class = ProductError
@@ -414,9 +410,9 @@ class ProductAttributeAssignmentUpdate(BaseMutation, VariantAssignmentValidation
         )
 
         if len(variant_attrs_pks) != len(assigned_attributes):
-            invalid_attrs = set(variant_attrs_pks) - set(
+            invalid_attrs = set(variant_attrs_pks) - {
                 str(pk) for pk in assigned_attributes
-            )
+            }
             invalid_attrs = [
                 graphene.Node.to_global_id("Attribute", pk) for pk in invalid_attrs
             ]
@@ -438,9 +434,9 @@ class ProductAttributeAssignmentUpdate(BaseMutation, VariantAssignmentValidation
         ).values_list("attribute_id", flat=True)
 
         if len(variant_attrs_pks) != len(assigned_attributes):
-            invalid_attrs = set(variant_attrs_pks) - set(
+            invalid_attrs = set(variant_attrs_pks) - {
                 str(pk) for pk in assigned_attributes
-            )
+            }
             invalid_attrs = [
                 graphene.Node.to_global_id("Attribute", pk) for pk in invalid_attrs
             ]
@@ -482,7 +478,7 @@ class ProductAttributeAssignmentUpdate(BaseMutation, VariantAssignmentValidation
             id__in=variant_attrs_pks
         ).values_list("pk", flat=True)
         if len(variant_attrs_pks) != len(attributes):
-            invalid_attrs = set(variant_attrs_pks) - set(str(pk) for pk in attributes)
+            invalid_attrs = set(variant_attrs_pks) - {str(pk) for pk in attributes}
             invalid_attrs = [
                 graphene.Node.to_global_id("Attribute", pk) for pk in invalid_attrs
             ]

@@ -1,9 +1,9 @@
 import copy
+import datetime
 from collections import defaultdict
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from dataclasses import fields as dataclass_fields
-from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Optional
 from uuid import UUID
@@ -48,7 +48,7 @@ from ....warehouse.models import Stock, Warehouse
 from ...account.i18n import I18nMixin
 from ...account.types import AddressInput
 from ...core import ResolveInfo
-from ...core.descriptions import ADDED_IN_314, ADDED_IN_318, PREVIEW_FEATURE
+from ...core.descriptions import ADDED_IN_318
 from ...core.doc_category import DOC_CATEGORY_ORDERS
 from ...core.enums import ErrorPolicy, ErrorPolicyEnum, LanguageCodeEnum
 from ...core.mutations import BaseMutation
@@ -182,11 +182,11 @@ class OrderBulkCreateData:
 
     @property
     def all_invoices(self) -> list[Invoice]:
-        return [invoice for invoice in self.invoices]
+        return list(self.invoices)
 
     @property
     def all_discounts(self) -> list[OrderDiscount]:
-        return [discount for discount in self.discounts]
+        return list(self.discounts)
 
     @property
     def orderline_fulfillmentlines_map(
@@ -216,18 +216,16 @@ class OrderBulkCreateData:
     @property
     def unique_variant_ids(self) -> list[int]:
         return list(
-            set(
-                [
-                    order_line.line.variant.id
-                    for order_line in self.lines
-                    if order_line.line.variant
-                ]
-            )
+            {
+                order_line.line.variant.id
+                for order_line in self.lines
+                if order_line.line.variant
+            }
         )
 
     @property
     def unique_warehouse_ids(self) -> list[UUID]:
-        return list(set([order_line.warehouse.id for order_line in self.lines]))
+        return list({order_line.warehouse.id for order_line in self.lines})
 
     @property
     def total_order_quantity(self):
@@ -615,7 +613,7 @@ class OrderBulkCreate(BaseMutation, I18nMixin):
         )
 
     class Meta:
-        description = "Creates multiple orders." + ADDED_IN_314 + PREVIEW_FEATURE
+        description = "Creates multiple orders."
         permissions = (OrderPermissions.MANAGE_ORDERS_IMPORT,)
         doc_category = DOC_CATEGORY_ORDERS
         error_type_class = OrderBulkCreateError
@@ -769,14 +767,14 @@ class OrderBulkCreate(BaseMutation, I18nMixin):
         return object_storage
 
     @classmethod
-    def is_datetime_valid(cls, date: datetime) -> bool:
+    def is_datetime_valid(cls, date: datetime.datetime) -> bool:
         """We accept future time values with 5 minutes from current time.
 
         Some systems might have incorrect time that is in the future compared to Saleor.
         At the same time, we don't want to create orders that are too far in the future.
         """
         current_time = timezone.now()
-        future_time = current_time + timedelta(minutes=MINUTES_DIFF)
+        future_time = current_time + datetime.timedelta(minutes=MINUTES_DIFF)
         if not date.tzinfo:
             raise ValidationError(
                 message="Input 'date' must be timezone-aware. "
@@ -1351,7 +1349,7 @@ class OrderBulkCreate(BaseMutation, I18nMixin):
             "user_email": "email",
             "user_external_reference": "external_reference",
         }
-        if any([note_input.get(key) for key in user_key_map.keys()]):
+        if any(note_input.get(key) for key in user_key_map.keys()):
             user = cls.get_instance_with_errors(
                 input=note_input,
                 errors=order_data.errors,
@@ -2128,7 +2126,7 @@ class OrderBulkCreate(BaseMutation, I18nMixin):
             if not order_data.is_critical_error:
                 stocks_map = stocks_map_copy
 
-        return [stock for stock in stocks_map.values()]
+        return list(stocks_map.values())
 
     @classmethod
     def handle_error_policy(

@@ -5,7 +5,6 @@ from unittest.mock import patch
 
 import graphene
 import pytest
-import pytz
 from django.test import override_settings
 from django.utils import timezone
 
@@ -125,9 +124,7 @@ def test_checkout_create_with_default_channel(
     assert new_checkout.channel == channel_USD
     assert calculate_checkout_quantity(lines) == quantity
 
-    assert any(
-        [str(warning.message) == DEPRECATION_WARNING_MESSAGE for warning in warns]
-    )
+    assert any(str(warning.message) == DEPRECATION_WARNING_MESSAGE for warning in warns)
 
 
 def test_checkout_create_with_inactive_channel(
@@ -266,9 +263,7 @@ def test_checkout_create_with_inactive_default_channel(
 
     assert new_checkout.channel == channel_USD
 
-    assert any(
-        [str(warning.message) == DEPRECATION_WARNING_MESSAGE for warning in warns]
-    )
+    assert any(str(warning.message) == DEPRECATION_WARNING_MESSAGE for warning in warns)
 
 
 def test_checkout_create_with_inactive_and_active_default_channel(
@@ -298,9 +293,7 @@ def test_checkout_create_with_inactive_and_active_default_channel(
 
     assert new_checkout.channel == channel_USD
 
-    assert any(
-        [str(warning.message) == DEPRECATION_WARNING_MESSAGE for warning in warns]
-    )
+    assert any(str(warning.message) == DEPRECATION_WARNING_MESSAGE for warning in warns)
 
 
 def test_checkout_create_with_inactive_and_two_active_default_channel(
@@ -1836,7 +1829,7 @@ def test_checkout_create_available_for_purchase_from_tomorrow_product(
     product = variant.product
 
     product.channel_listings.update(
-        available_for_purchase_at=datetime.datetime.now(pytz.UTC)
+        available_for_purchase_at=datetime.datetime.now(tz=datetime.UTC)
         + datetime.timedelta(days=1)
     )
 

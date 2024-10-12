@@ -1,7 +1,6 @@
 import datetime
 
 import graphene
-import pytz
 from django.core.exceptions import ValidationError
 
 from .....core.utils.date_time import convert_to_utc_date_time
@@ -12,7 +11,7 @@ from .....product.error_codes import CollectionErrorCode
 from .....product.tasks import collection_product_updated_task
 from ....channel import ChannelContext
 from ....core import ResolveInfo
-from ....core.descriptions import ADDED_IN_38, DEPRECATED_IN_3X_INPUT, RICH_CONTENT
+from ....core.descriptions import DEPRECATED_IN_3X_INPUT, RICH_CONTENT
 from ....core.doc_category import DOC_CATEGORY_PRODUCTS
 from ....core.fields import JSONString
 from ....core.mutations import ModelMutation
@@ -52,16 +51,12 @@ class CollectionInput(BaseInputObjectType):
     )
     metadata = NonNullList(
         MetadataInput,
-        description=(
-            "Fields required to update the collection metadata." + ADDED_IN_38
-        ),
+        description=("Fields required to update the collection metadata."),
         required=False,
     )
     private_metadata = NonNullList(
         MetadataInput,
-        description=(
-            "Fields required to update the collection private metadata." + ADDED_IN_38
-        ),
+        description=("Fields required to update the collection private metadata."),
         required=False,
     )
 
@@ -111,7 +106,7 @@ class CollectionCreate(ModelMutation):
         is_published = cleaned_input.get("is_published")
         publication_date = cleaned_input.get("publication_date")
         if is_published and not publication_date:
-            cleaned_input["published_at"] = datetime.datetime.now(pytz.UTC)
+            cleaned_input["published_at"] = datetime.datetime.now(tz=datetime.UTC)
         elif publication_date:
             cleaned_input["published_at"] = convert_to_utc_date_time(publication_date)
         clean_seo_fields(cleaned_input)

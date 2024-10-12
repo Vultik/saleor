@@ -3,7 +3,6 @@ from unittest.mock import ANY, call, patch
 
 import pytest
 from django.test import override_settings
-from prices import Money, TaxedMoney
 
 from ...channel import MarkAsPaidStrategy
 from ...core.models import EventDelivery
@@ -16,7 +15,6 @@ from ...payment.models import Payment
 from ...plugins.manager import get_plugins_manager
 from ...product.models import DigitalContent
 from ...product.tests.utils import create_image
-from ...tests.utils import flush_post_commit_hooks
 from ...warehouse.models import Allocation, Stock
 from ...webhook.event_types import WebhookEventAsyncType, WebhookEventSyncType
 from ...webhook.utils import get_webhooks_for_multiple_events
@@ -61,46 +59,6 @@ from ..notifications import (
     send_payment_confirmation,
 )
 from ..utils import updates_amounts_for_order
-
-
-@pytest.fixture
-def order_with_digital_line(order, digital_content, stock, site_settings):
-    site_settings.automatic_fulfillment_digital_products = True
-    site_settings.save()
-
-    variant = stock.product_variant
-    variant.digital_content = digital_content
-    variant.digital_content.save()
-
-    product_type = variant.product.product_type
-    product_type.is_shipping_required = False
-    product_type.is_digital = True
-    product_type.save()
-
-    quantity = 3
-    product = variant.product
-    channel = order.channel
-    variant_channel_listing = variant.channel_listings.get(channel=channel)
-    net = variant.get_price(variant_channel_listing)
-    gross = Money(amount=net.amount * Decimal(1.23), currency=net.currency)
-    unit_price = TaxedMoney(net=net, gross=gross)
-    line = order.lines.create(
-        product_name=str(product),
-        variant_name=str(variant),
-        product_sku=variant.sku,
-        product_variant_id=variant.get_global_id(),
-        is_shipping_required=variant.is_shipping_required(),
-        is_gift_card=variant.is_gift_card(),
-        quantity=quantity,
-        variant=variant,
-        unit_price=unit_price,
-        total_price=unit_price * quantity,
-        tax_rate=Decimal("0.23"),
-    )
-
-    Allocation.objects.create(order_line=line, stock=stock, quantity_allocated=quantity)
-
-    return order
 
 
 @patch(
@@ -766,6 +724,7 @@ def test_order_refunded_by_user(
     order_refunded_mock,
     order,
     checkout_with_item,
+    django_capture_on_commit_callbacks,
 ):
     # given
     payment = Payment.objects.create(
@@ -776,10 +735,10 @@ def test_order_refunded_by_user(
 
     # when
     manager = get_plugins_manager(allow_replica=False)
-    order_refunded(order, order.user, app, amount, payment, manager)
+    with django_capture_on_commit_callbacks(execute=True):
+        order_refunded(order, order.user, app, amount, payment, manager)
 
     # then
-    flush_post_commit_hooks()
     order_event = order.events.last()
     assert order_event.type == OrderEvents.PAYMENT_REFUNDED
 
@@ -800,6 +759,7 @@ def test_order_refunded_by_app(
     order,
     checkout_with_item,
     app,
+    django_capture_on_commit_callbacks,
 ):
     # given
     payment = Payment.objects.create(
@@ -809,10 +769,10 @@ def test_order_refunded_by_app(
 
     # when
     manager = get_plugins_manager(allow_replica=False)
-    order_refunded(order, None, app, amount, payment, manager)
+    with django_capture_on_commit_callbacks(execute=True):
+        order_refunded(order, None, app, amount, payment, manager)
 
     # then
-    flush_post_commit_hooks()
     order_event = order.events.last()
     assert order_event.type == OrderEvents.PAYMENT_REFUNDED
 
@@ -1670,7 +1630,11 @@ def test_fulfill_digital_lines_no_allocation(
 @patch("saleor.plugins.manager.PluginsManager.order_updated")
 @patch("saleor.plugins.manager.PluginsManager.order_fully_paid")
 def test_order_transaction_updated_order_fully_paid(
-    order_fully_paid, order_updated, order_with_lines, transaction_item_generator
+    order_fully_paid,
+    order_updated,
+    order_with_lines,
+    transaction_item_generator,
+    django_capture_on_commit_callbacks,
 ):
     # given
     order_info = fetch_order_info(order_with_lines)
@@ -1683,19 +1647,19 @@ def test_order_transaction_updated_order_fully_paid(
     )
 
     # when
-    order_transaction_updated(
-        order_info=order_info,
-        transaction_item=transaction_item,
-        manager=manager,
-        user=None,
-        app=None,
-        previous_authorized_value=Decimal(0),
-        previous_charged_value=Decimal(0),
-        previous_refunded_value=Decimal(0),
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        order_transaction_updated(
+            order_info=order_info,
+            transaction_item=transaction_item,
+            manager=manager,
+            user=None,
+            app=None,
+            previous_authorized_value=Decimal(0),
+            previous_charged_value=Decimal(0),
+            previous_refunded_value=Decimal(0),
+        )
 
     # then
-    flush_post_commit_hooks()
     order_fully_paid.assert_called_once_with(order_with_lines, webhooks=set())
     order_updated.assert_called_once_with(order_with_lines, webhooks=set())
 
@@ -2084,7 +2048,11 @@ def test_order_transaction_updated_for_refunded_triggers_webhooks(
 @patch("saleor.plugins.manager.PluginsManager.order_updated")
 @patch("saleor.plugins.manager.PluginsManager.order_fully_paid")
 def test_order_transaction_updated_order_partially_paid(
-    order_fully_paid, order_updated, order_with_lines, transaction_item_generator
+    order_fully_paid,
+    order_updated,
+    order_with_lines,
+    transaction_item_generator,
+    django_capture_on_commit_callbacks,
 ):
     # given
     order_info = fetch_order_info(order_with_lines)
@@ -2097,19 +2065,19 @@ def test_order_transaction_updated_order_partially_paid(
     )
 
     # when
-    order_transaction_updated(
-        order_info=order_info,
-        transaction_item=transaction_item,
-        manager=manager,
-        user=None,
-        app=None,
-        previous_authorized_value=Decimal(0),
-        previous_charged_value=Decimal(0),
-        previous_refunded_value=Decimal(0),
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        order_transaction_updated(
+            order_info=order_info,
+            transaction_item=transaction_item,
+            manager=manager,
+            user=None,
+            app=None,
+            previous_authorized_value=Decimal(0),
+            previous_charged_value=Decimal(0),
+            previous_refunded_value=Decimal(0),
+        )
 
     # then
-    flush_post_commit_hooks()
     assert not order_fully_paid.called
     order_updated.assert_called_once_with(order_with_lines, webhooks=set())
 
@@ -2117,7 +2085,11 @@ def test_order_transaction_updated_order_partially_paid(
 @patch("saleor.plugins.manager.PluginsManager.order_updated")
 @patch("saleor.plugins.manager.PluginsManager.order_fully_paid")
 def test_order_transaction_updated_order_partially_paid_and_multiple_transactions(
-    order_fully_paid, order_updated, order_with_lines, transaction_item_generator
+    order_fully_paid,
+    order_updated,
+    order_with_lines,
+    transaction_item_generator,
+    django_capture_on_commit_callbacks,
 ):
     # given
     order_info = fetch_order_info(order_with_lines)
@@ -2133,19 +2105,19 @@ def test_order_transaction_updated_order_partially_paid_and_multiple_transaction
     )
 
     # when
-    order_transaction_updated(
-        order_info=order_info,
-        transaction_item=transaction_item,
-        manager=manager,
-        user=None,
-        app=None,
-        previous_authorized_value=Decimal(0),
-        previous_charged_value=Decimal(0),
-        previous_refunded_value=Decimal(0),
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        order_transaction_updated(
+            order_info=order_info,
+            transaction_item=transaction_item,
+            manager=manager,
+            user=None,
+            app=None,
+            previous_authorized_value=Decimal(0),
+            previous_charged_value=Decimal(0),
+            previous_refunded_value=Decimal(0),
+        )
 
     # then
-    flush_post_commit_hooks()
     assert not order_fully_paid.called
     order_updated.assert_called_once_with(order_with_lines, webhooks=set())
 
@@ -2153,7 +2125,11 @@ def test_order_transaction_updated_order_partially_paid_and_multiple_transaction
 @patch("saleor.plugins.manager.PluginsManager.order_updated")
 @patch("saleor.plugins.manager.PluginsManager.order_fully_paid")
 def test_order_transaction_updated_with_the_same_transaction_charged_amount(
-    order_fully_paid, order_updated, order_with_lines, transaction_item_generator
+    order_fully_paid,
+    order_updated,
+    order_with_lines,
+    transaction_item_generator,
+    django_capture_on_commit_callbacks,
 ):
     # given
     order_info = fetch_order_info(order_with_lines)
@@ -2168,19 +2144,19 @@ def test_order_transaction_updated_with_the_same_transaction_charged_amount(
     )
 
     # when
-    order_transaction_updated(
-        order_info=order_info,
-        transaction_item=transaction_item,
-        manager=manager,
-        user=None,
-        app=None,
-        previous_authorized_value=Decimal(0),
-        previous_charged_value=charged_value,
-        previous_refunded_value=Decimal(0),
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        order_transaction_updated(
+            order_info=order_info,
+            transaction_item=transaction_item,
+            manager=manager,
+            user=None,
+            app=None,
+            previous_authorized_value=Decimal(0),
+            previous_charged_value=charged_value,
+            previous_refunded_value=Decimal(0),
+        )
 
     # then
-    flush_post_commit_hooks()
     assert not order_fully_paid.called
     assert not order_updated.called
 
@@ -2188,7 +2164,11 @@ def test_order_transaction_updated_with_the_same_transaction_charged_amount(
 @patch("saleor.plugins.manager.PluginsManager.order_updated")
 @patch("saleor.plugins.manager.PluginsManager.order_fully_paid")
 def test_order_transaction_updated_order_authorized(
-    order_fully_paid, order_updated, order_with_lines, transaction_item_generator
+    order_fully_paid,
+    order_updated,
+    order_with_lines,
+    transaction_item_generator,
+    django_capture_on_commit_callbacks,
 ):
     # given
     order_info = fetch_order_info(order_with_lines)
@@ -2202,19 +2182,19 @@ def test_order_transaction_updated_order_authorized(
     )
 
     # when
-    order_transaction_updated(
-        order_info=order_info,
-        transaction_item=transaction_item,
-        manager=manager,
-        user=None,
-        app=None,
-        previous_authorized_value=Decimal(0),
-        previous_charged_value=Decimal(0),
-        previous_refunded_value=Decimal(0),
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        order_transaction_updated(
+            order_info=order_info,
+            transaction_item=transaction_item,
+            manager=manager,
+            user=None,
+            app=None,
+            previous_authorized_value=Decimal(0),
+            previous_charged_value=Decimal(0),
+            previous_refunded_value=Decimal(0),
+        )
 
     # then
-    flush_post_commit_hooks()
     assert not order_fully_paid.called
     order_updated.assert_called_once_with(order_with_lines, webhooks=set())
 
@@ -2222,7 +2202,11 @@ def test_order_transaction_updated_order_authorized(
 @patch("saleor.plugins.manager.PluginsManager.order_updated")
 @patch("saleor.plugins.manager.PluginsManager.order_fully_paid")
 def test_order_transaction_updated_order_partially_authorized_and_multiple_transactions(
-    order_fully_paid, order_updated, order_with_lines, transaction_item_generator
+    order_fully_paid,
+    order_updated,
+    order_with_lines,
+    transaction_item_generator,
+    django_capture_on_commit_callbacks,
 ):
     # given
     order_info = fetch_order_info(order_with_lines)
@@ -2238,19 +2222,19 @@ def test_order_transaction_updated_order_partially_authorized_and_multiple_trans
     )
 
     # when
-    order_transaction_updated(
-        order_info=order_info,
-        transaction_item=transaction_item,
-        manager=manager,
-        user=None,
-        app=None,
-        previous_authorized_value=Decimal(0),
-        previous_charged_value=Decimal(0),
-        previous_refunded_value=Decimal(0),
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        order_transaction_updated(
+            order_info=order_info,
+            transaction_item=transaction_item,
+            manager=manager,
+            user=None,
+            app=None,
+            previous_authorized_value=Decimal(0),
+            previous_charged_value=Decimal(0),
+            previous_refunded_value=Decimal(0),
+        )
 
     # then
-    flush_post_commit_hooks()
     assert not order_fully_paid.called
     order_updated.assert_called_once_with(order_with_lines, webhooks=set())
 
@@ -2258,7 +2242,11 @@ def test_order_transaction_updated_order_partially_authorized_and_multiple_trans
 @patch("saleor.plugins.manager.PluginsManager.order_updated")
 @patch("saleor.plugins.manager.PluginsManager.order_fully_paid")
 def test_order_transaction_updated_with_the_same_transaction_authorized_amount(
-    order_fully_paid, order_updated, order_with_lines, transaction_item_generator
+    order_fully_paid,
+    order_updated,
+    order_with_lines,
+    transaction_item_generator,
+    django_capture_on_commit_callbacks,
 ):
     # given
     order_info = fetch_order_info(order_with_lines)
@@ -2273,19 +2261,19 @@ def test_order_transaction_updated_with_the_same_transaction_authorized_amount(
     )
 
     # when
-    order_transaction_updated(
-        order_info=order_info,
-        transaction_item=transaction_item,
-        manager=manager,
-        user=None,
-        app=None,
-        previous_authorized_value=authorized_value,
-        previous_charged_value=Decimal(0),
-        previous_refunded_value=Decimal(0),
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        order_transaction_updated(
+            order_info=order_info,
+            transaction_item=transaction_item,
+            manager=manager,
+            user=None,
+            app=None,
+            previous_authorized_value=authorized_value,
+            previous_charged_value=Decimal(0),
+            previous_refunded_value=Decimal(0),
+        )
 
     # then
-    flush_post_commit_hooks()
     assert not order_fully_paid.called
     assert not order_updated.called
 
@@ -2293,7 +2281,11 @@ def test_order_transaction_updated_with_the_same_transaction_authorized_amount(
 @patch("saleor.plugins.manager.PluginsManager.order_refunded")
 @patch("saleor.plugins.manager.PluginsManager.order_fully_refunded")
 def test_order_transaction_updated_order_fully_refunded(
-    order_fully_refunded, order_refunded, order_with_lines, transaction_item_generator
+    order_fully_refunded,
+    order_refunded,
+    order_with_lines,
+    transaction_item_generator,
+    django_capture_on_commit_callbacks,
 ):
     # given
     order_info = fetch_order_info(order_with_lines)
@@ -2306,19 +2298,19 @@ def test_order_transaction_updated_order_fully_refunded(
     )
 
     # when
-    order_transaction_updated(
-        order_info=order_info,
-        transaction_item=transaction_item,
-        manager=manager,
-        user=None,
-        app=None,
-        previous_authorized_value=Decimal(0),
-        previous_charged_value=Decimal(0),
-        previous_refunded_value=Decimal(0),
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        order_transaction_updated(
+            order_info=order_info,
+            transaction_item=transaction_item,
+            manager=manager,
+            user=None,
+            app=None,
+            previous_authorized_value=Decimal(0),
+            previous_charged_value=Decimal(0),
+            previous_refunded_value=Decimal(0),
+        )
 
     # then
-    flush_post_commit_hooks()
     order_fully_refunded.assert_called_once_with(order_with_lines, webhooks=set())
     order_refunded.assert_called_once_with(order_with_lines, webhooks=set())
 
@@ -2326,7 +2318,11 @@ def test_order_transaction_updated_order_fully_refunded(
 @patch("saleor.plugins.manager.PluginsManager.order_refunded")
 @patch("saleor.plugins.manager.PluginsManager.order_fully_refunded")
 def test_order_transaction_updated_order_partially_refunded(
-    order_fully_refunded, order_refunded, order_with_lines, transaction_item_generator
+    order_fully_refunded,
+    order_refunded,
+    order_with_lines,
+    transaction_item_generator,
+    django_capture_on_commit_callbacks,
 ):
     # given
     order_info = fetch_order_info(order_with_lines)
@@ -2339,19 +2335,19 @@ def test_order_transaction_updated_order_partially_refunded(
     )
 
     # when
-    order_transaction_updated(
-        order_info=order_info,
-        transaction_item=transaction_item,
-        manager=manager,
-        user=None,
-        app=None,
-        previous_authorized_value=Decimal(0),
-        previous_charged_value=Decimal(0),
-        previous_refunded_value=Decimal(0),
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        order_transaction_updated(
+            order_info=order_info,
+            transaction_item=transaction_item,
+            manager=manager,
+            user=None,
+            app=None,
+            previous_authorized_value=Decimal(0),
+            previous_charged_value=Decimal(0),
+            previous_refunded_value=Decimal(0),
+        )
 
     # then
-    flush_post_commit_hooks()
     assert not order_fully_refunded.called
     order_refunded.assert_called_once_with(order_with_lines, webhooks=set())
 
@@ -2359,7 +2355,11 @@ def test_order_transaction_updated_order_partially_refunded(
 @patch("saleor.plugins.manager.PluginsManager.order_refunded")
 @patch("saleor.plugins.manager.PluginsManager.order_fully_refunded")
 def test_order_transaction_updated_order_fully_refunded_and_multiple_transactions(
-    order_fully_refunded, order_refunded, order_with_lines, transaction_item_generator
+    order_fully_refunded,
+    order_refunded,
+    order_with_lines,
+    transaction_item_generator,
+    django_capture_on_commit_callbacks,
 ):
     # given
     order_info = fetch_order_info(order_with_lines)
@@ -2376,19 +2376,19 @@ def test_order_transaction_updated_order_fully_refunded_and_multiple_transaction
     )
 
     # when
-    order_transaction_updated(
-        order_info=order_info,
-        transaction_item=transaction_item,
-        manager=manager,
-        user=None,
-        app=None,
-        previous_authorized_value=Decimal(0),
-        previous_charged_value=Decimal(0),
-        previous_refunded_value=Decimal(0),
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        order_transaction_updated(
+            order_info=order_info,
+            transaction_item=transaction_item,
+            manager=manager,
+            user=None,
+            app=None,
+            previous_authorized_value=Decimal(0),
+            previous_charged_value=Decimal(0),
+            previous_refunded_value=Decimal(0),
+        )
 
     # then
-    flush_post_commit_hooks()
     order_fully_refunded.assert_called_once_with(order_with_lines, webhooks=set())
     order_refunded.assert_called_once_with(order_with_lines, webhooks=set())
 
@@ -2401,6 +2401,7 @@ def test_order_transaction_updated_order_fully_refunded_with_transaction_and_pay
     order_with_lines,
     transaction_item_generator,
     payment_dummy,
+    django_capture_on_commit_callbacks,
 ):
     # given
     payment = payment_dummy
@@ -2429,19 +2430,19 @@ def test_order_transaction_updated_order_fully_refunded_with_transaction_and_pay
     )
 
     # when
-    order_transaction_updated(
-        order_info=order_info,
-        transaction_item=transaction_item,
-        manager=manager,
-        user=None,
-        app=None,
-        previous_authorized_value=Decimal(0),
-        previous_charged_value=Decimal(0),
-        previous_refunded_value=Decimal(0),
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        order_transaction_updated(
+            order_info=order_info,
+            transaction_item=transaction_item,
+            manager=manager,
+            user=None,
+            app=None,
+            previous_authorized_value=Decimal(0),
+            previous_charged_value=Decimal(0),
+            previous_refunded_value=Decimal(0),
+        )
 
     # then
-    flush_post_commit_hooks()
     order_refunded.assert_called_once_with(order_with_lines, webhooks=set())
     order_fully_refunded.assert_called_once_with(order_with_lines, webhooks=set())
 
