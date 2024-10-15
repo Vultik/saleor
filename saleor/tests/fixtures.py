@@ -10,13 +10,11 @@ from unittest.mock import MagicMock
 import graphene
 import pytest
 from django.conf import settings
-from django.contrib.sites.models import Site
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from django.template.defaultfilters import truncatechars
 from django.test.utils import CaptureQueriesContext as BaseCaptureQueriesContext
 from django.utils import timezone
-from django_countries import countries
 from freezegun import freeze_time
 from PIL import Image
 from prices import Money
@@ -48,36 +46,24 @@ from ..discount import (
     DiscountType,
     DiscountValueType,
     PromotionEvents,
-    PromotionType,
     RewardType,
     RewardValueType,
-    VoucherType,
 )
-from ..discount.interface import VariantPromotionRuleInfo
 from ..discount.models import (
     CheckoutDiscount,
     CheckoutLineDiscount,
     Promotion,
     PromotionEvent,
-    PromotionRule,
     PromotionRuleTranslation,
     PromotionTranslation,
-    Voucher,
-    VoucherChannelListing,
-    VoucherCode,
-    VoucherCustomer,
     VoucherTranslation,
 )
-from ..giftcard import GiftCardEvents
-from ..giftcard.models import GiftCard, GiftCardEvent, GiftCardTag
-from ..menu.models import Menu
 from ..payment import ChargeStatus, TransactionKind
 from ..payment.interface import AddressData, GatewayConfig, GatewayResponse, PaymentData
 from ..payment.models import Payment, TransactionEvent, TransactionItem
 from ..payment.transaction_item_calculations import recalculate_transaction_amounts
 from ..payment.utils import create_manual_adjustment_events
 from ..permission.enums import get_permissions
-from ..permission.models import Permission
 from ..plugins.manager import get_plugins_manager
 from ..product.models import (
     CategoryTranslation,
@@ -86,21 +72,10 @@ from ..product.models import (
     ProductVariantChannelListing,
     ProductVariantTranslation,
 )
-from ..product.utils.variants import fetch_variants_for_promotion_rules
-from ..shipping.models import (
-    ShippingMethod,
-    ShippingMethodChannelListing,
-    ShippingMethodTranslation,
-    ShippingMethodType,
-    ShippingZone,
-)
-from ..shipping.utils import convert_to_shipping_method_data
-from ..site.models import SiteSettings
 from ..tax import TaxCalculationStrategy
 from ..warehouse.models import (
     PreorderReservation,
     Reservation,
-    Warehouse,
 )
 from ..webhook.event_types import WebhookEventAsyncType
 from ..webhook.transport.utils import to_payment_app_id
@@ -187,61 +162,6 @@ def assert_num_queries(capture_queries):
 @pytest.fixture
 def assert_max_num_queries(capture_queries):
     return partial(capture_queries, exact=False)
-
-
-@pytest.fixture(autouse=True)
-def setup_dummy_gateways(settings):
-    settings.PLUGINS = [
-        "saleor.payment.gateways.dummy.plugin.DummyGatewayPlugin",
-        "saleor.payment.gateways.dummy_credit_card.plugin.DummyCreditCardGatewayPlugin",
-    ]
-    return settings
-
-
-@pytest.fixture
-def _sample_gateway(settings):
-    settings.PLUGINS += [
-        "saleor.plugins.tests.sample_plugins.ActiveDummyPaymentGateway"
-    ]
-
-
-@pytest.fixture(autouse=True)
-def site_settings(db, settings) -> SiteSettings:
-    """Create a site and matching site settings.
-
-    This fixture is autouse because django.contrib.sites.models.Site and
-    saleor.site.models.SiteSettings have a one-to-one relationship and a site
-    should never exist without a matching settings object.
-    """
-    site = Site.objects.get_or_create(name="mirumee.com", domain="mirumee.com")[0]
-    obj = SiteSettings.objects.get_or_create(
-        site=site,
-        default_mail_sender_name="Mirumee Labs",
-        default_mail_sender_address="mirumee@example.com",
-    )[0]
-    settings.SITE_ID = site.pk
-    settings.ALLOWED_HOSTS += [site.domain]
-
-    main_menu = Menu.objects.get_or_create(
-        name=settings.DEFAULT_MENUS["top_menu_name"],
-        slug=settings.DEFAULT_MENUS["top_menu_name"],
-    )[0]
-    secondary_menu = Menu.objects.get_or_create(
-        name=settings.DEFAULT_MENUS["bottom_menu_name"],
-        slug=settings.DEFAULT_MENUS["bottom_menu_name"],
-    )[0]
-    obj.top_menu = main_menu
-    obj.bottom_menu = secondary_menu
-    obj.save()
-    return obj
-
-
-@pytest.fixture
-def site_settings_with_reservations(site_settings):
-    site_settings.reserve_stock_duration_anonymous_user = 5
-    site_settings.reserve_stock_duration_authenticated_user = 5
-    site_settings.save()
-    return site_settings
 
 
 @pytest.fixture
@@ -615,22 +535,6 @@ def checkout_with_item_and_voucher_and_shipping_method(
     checkout.shipping_method = shipping_method
     checkout.save()
     return checkout
-
-
-@pytest.fixture
-def other_shipping_method(shipping_zone, channel_USD):
-    method = ShippingMethod.objects.create(
-        name="DPD",
-        type=ShippingMethodType.PRICE_BASED,
-        shipping_zone=shipping_zone,
-    )
-    ShippingMethodChannelListing.objects.create(
-        channel=channel_USD,
-        shipping_method=method,
-        minimum_order_price=Money(0, "USD"),
-        price=Money(9, "USD"),
-    )
-    return method
 
 
 @pytest.fixture
@@ -1164,10 +1068,9 @@ def user_checkout_with_items_for_cc(user_checkout_for_cc, product_list):
 def user_checkouts(request, user_checkout_with_items, user_checkout_with_items_for_cc):
     if request.param == "regular":
         return user_checkout_with_items
-    elif request.param == "click_and_collect":
+    if request.param == "click_and_collect":
         return user_checkout_with_items_for_cc
-    else:
-        raise ValueError("Internal test error")
+    raise ValueError("Internal test error")
 
 
 @pytest.fixture
@@ -1213,256 +1116,6 @@ def staff_users(staff_user):
         ]
     )
     return [staff_user] + staff_users
-
-
-@pytest.fixture
-def shipping_zone(db, channel_USD, default_tax_class):  # pylint: disable=W0613
-    shipping_zone = ShippingZone.objects.create(
-        name="Europe", countries=[code for code, name in countries]
-    )
-    shipping_zone.channels.add(channel_USD)
-    method = shipping_zone.shipping_methods.create(
-        name="DHL",
-        type=ShippingMethodType.PRICE_BASED,
-        shipping_zone=shipping_zone,
-        tax_class=default_tax_class,
-    )
-    ShippingMethodChannelListing.objects.create(
-        channel=channel_USD,
-        currency=channel_USD.currency_code,
-        shipping_method=method,
-        minimum_order_price=Money(0, channel_USD.currency_code),
-        price=Money(10, channel_USD.currency_code),
-    )
-    return shipping_zone
-
-
-@pytest.fixture
-def shipping_zone_JPY(shipping_zone, channel_JPY):
-    shipping_zone.channels.add(channel_JPY)
-    method = shipping_zone.shipping_methods.get()
-    ShippingMethodChannelListing.objects.create(
-        channel=channel_JPY,
-        currency=channel_JPY.currency_code,
-        shipping_method=method,
-        minimum_order_price=Money(0, channel_JPY.currency_code),
-        price=Money(700, channel_JPY.currency_code),
-    )
-    return shipping_zone
-
-
-@pytest.fixture
-def shipping_zones(db, channel_USD, channel_PLN):
-    shipping_zone_poland, shipping_zone_usa = ShippingZone.objects.bulk_create(
-        [
-            ShippingZone(name="Poland", countries=["PL"]),
-            ShippingZone(name="USA", countries=["US"]),
-        ]
-    )
-
-    shipping_zone_poland.channels.add(channel_PLN, channel_USD)
-    shipping_zone_usa.channels.add(channel_PLN, channel_USD)
-
-    method = shipping_zone_poland.shipping_methods.create(
-        name="DHL",
-        type=ShippingMethodType.PRICE_BASED,
-        shipping_zone=shipping_zone,
-    )
-    second_method = shipping_zone_usa.shipping_methods.create(
-        name="DHL",
-        type=ShippingMethodType.PRICE_BASED,
-        shipping_zone=shipping_zone,
-    )
-    ShippingMethodChannelListing.objects.bulk_create(
-        [
-            ShippingMethodChannelListing(
-                channel=channel_USD,
-                shipping_method=method,
-                minimum_order_price=Money(0, "USD"),
-                price=Money(10, "USD"),
-                currency=channel_USD.currency_code,
-            ),
-            ShippingMethodChannelListing(
-                channel=channel_USD,
-                shipping_method=second_method,
-                minimum_order_price=Money(0, "USD"),
-                currency=channel_USD.currency_code,
-            ),
-            ShippingMethodChannelListing(
-                channel=channel_PLN,
-                shipping_method=method,
-                minimum_order_price=Money(0, "PLN"),
-                price=Money(40, "PLN"),
-                currency=channel_PLN.currency_code,
-            ),
-            ShippingMethodChannelListing(
-                channel=channel_PLN,
-                shipping_method=second_method,
-                minimum_order_price=Money(0, "PLN"),
-                currency=channel_PLN.currency_code,
-            ),
-        ]
-    )
-    return [shipping_zone_poland, shipping_zone_usa]
-
-
-def chunks(it, n):
-    for i in range(0, len(it), n):
-        yield it[i : i + n]
-
-
-@pytest.fixture
-def shipping_zones_with_warehouses(address, channel_USD):
-    zones = [ShippingZone(name=f"{i}_zone") for i in range(10)]
-    warehouses = [Warehouse(slug=f"{i}_warehouse", address=address) for i in range(20)]
-    warehouses = Warehouse.objects.bulk_create(warehouses)
-    warehouses_in_batches = list(chunks(warehouses, 2))
-    for i, zone in enumerate(ShippingZone.objects.bulk_create(zones)):
-        zone.channels.add(channel_USD)
-        for warehouse in warehouses_in_batches[i]:
-            zone.warehouses.add(warehouse)
-    return zones
-
-
-@pytest.fixture
-def shipping_zones_with_different_channels(db, channel_USD, channel_PLN):
-    shipping_zone_poland, shipping_zone_usa = ShippingZone.objects.bulk_create(
-        [
-            ShippingZone(name="Poland", countries=["PL"]),
-            ShippingZone(name="USA", countries=["US"]),
-        ]
-    )
-
-    shipping_zone_poland.channels.add(channel_PLN, channel_USD)
-    shipping_zone_usa.channels.add(channel_USD)
-
-    method = shipping_zone_poland.shipping_methods.create(
-        name="DHL",
-        type=ShippingMethodType.PRICE_BASED,
-        shipping_zone=shipping_zone,
-    )
-    second_method = shipping_zone_usa.shipping_methods.create(
-        name="DHL",
-        type=ShippingMethodType.PRICE_BASED,
-        shipping_zone=shipping_zone,
-    )
-    ShippingMethodChannelListing.objects.bulk_create(
-        [
-            ShippingMethodChannelListing(
-                channel=channel_USD,
-                shipping_method=method,
-                minimum_order_price=Money(0, "USD"),
-                price=Money(10, "USD"),
-                currency=channel_USD.currency_code,
-            ),
-            ShippingMethodChannelListing(
-                channel=channel_USD,
-                shipping_method=second_method,
-                minimum_order_price=Money(0, "USD"),
-                currency=channel_USD.currency_code,
-            ),
-            ShippingMethodChannelListing(
-                channel=channel_PLN,
-                shipping_method=method,
-                minimum_order_price=Money(0, "PLN"),
-                price=Money(40, "PLN"),
-                currency=channel_PLN.currency_code,
-            ),
-            ShippingMethodChannelListing(
-                channel=channel_PLN,
-                shipping_method=second_method,
-                minimum_order_price=Money(0, "PLN"),
-                currency=channel_PLN.currency_code,
-            ),
-        ]
-    )
-    return [shipping_zone_poland, shipping_zone_usa]
-
-
-@pytest.fixture
-def shipping_zone_without_countries(db, channel_USD):  # pylint: disable=W0613
-    shipping_zone = ShippingZone.objects.create(name="Europe", countries=[])
-    method = shipping_zone.shipping_methods.create(
-        name="DHL",
-        type=ShippingMethodType.PRICE_BASED,
-        shipping_zone=shipping_zone,
-    )
-    ShippingMethodChannelListing.objects.create(
-        channel=channel_USD,
-        shipping_method=method,
-        minimum_order_price=Money(0, "USD"),
-        price=Money(10, "USD"),
-    )
-    return shipping_zone
-
-
-@pytest.fixture
-def shipping_method(shipping_zone, channel_USD, default_tax_class):
-    method = ShippingMethod.objects.create(
-        name="DHL",
-        type=ShippingMethodType.PRICE_BASED,
-        shipping_zone=shipping_zone,
-        maximum_delivery_days=10,
-        minimum_delivery_days=5,
-        tax_class=default_tax_class,
-    )
-    ShippingMethodChannelListing.objects.create(
-        shipping_method=method,
-        channel=channel_USD,
-        minimum_order_price=Money(0, "USD"),
-        price=Money(10, "USD"),
-    )
-    return method
-
-
-@pytest.fixture
-def shipping_method_data(shipping_method, channel_USD):
-    listing = ShippingMethodChannelListing.objects.filter(
-        channel=channel_USD, shipping_method=shipping_method
-    ).get()
-    return convert_to_shipping_method_data(shipping_method, listing)
-
-
-@pytest.fixture
-def shipping_method_weight_based(shipping_zone, channel_USD):
-    method = ShippingMethod.objects.create(
-        name="weight based method",
-        type=ShippingMethodType.WEIGHT_BASED,
-        shipping_zone=shipping_zone,
-        maximum_delivery_days=10,
-        minimum_delivery_days=5,
-    )
-    ShippingMethodChannelListing.objects.create(
-        shipping_method=method,
-        channel=channel_USD,
-        minimum_order_price=Money(0, "USD"),
-        price=Money(10, "USD"),
-    )
-    return method
-
-
-@pytest.fixture
-def shipping_method_excluded_by_postal_code(shipping_method):
-    shipping_method.postal_code_rules.create(start="HB2", end="HB6")
-    return shipping_method
-
-
-@pytest.fixture
-def shipping_method_channel_PLN(shipping_zone, channel_PLN):
-    shipping_zone.channels.add(channel_PLN)
-    method = ShippingMethod.objects.create(
-        name="DHL",
-        type=ShippingMethodType.PRICE_BASED,
-        shipping_zone=shipping_zone,
-    )
-    ShippingMethodChannelListing.objects.create(
-        shipping_method=method,
-        channel=channel_PLN,
-        minimum_order_price=Money(0, channel_PLN.currency_code),
-        price=Money(10, channel_PLN.currency_code),
-        currency=channel_PLN.currency_code,
-    )
-    return method
 
 
 @pytest.fixture
@@ -2206,188 +1859,6 @@ def image_list():
 
 
 @pytest.fixture
-def permission_manage_discounts():
-    return Permission.objects.get(codename="manage_discounts")
-
-
-@pytest.fixture
-def permission_manage_gift_card():
-    return Permission.objects.get(codename="manage_gift_card")
-
-
-@pytest.fixture
-def permission_manage_orders():
-    return Permission.objects.get(codename="manage_orders")
-
-
-@pytest.fixture
-def permission_manage_orders_import():
-    return Permission.objects.get(codename="manage_orders_import")
-
-
-@pytest.fixture
-def permission_manage_checkouts():
-    return Permission.objects.get(codename="manage_checkouts")
-
-
-@pytest.fixture
-def permission_handle_checkouts():
-    return Permission.objects.get(codename="handle_checkouts")
-
-
-@pytest.fixture
-def permission_manage_plugins():
-    return Permission.objects.get(codename="manage_plugins")
-
-
-@pytest.fixture
-def permission_manage_apps():
-    return Permission.objects.get(codename="manage_apps")
-
-
-@pytest.fixture
-def permission_handle_taxes():
-    return Permission.objects.get(codename="handle_taxes")
-
-
-@pytest.fixture
-def permission_manage_observability():
-    return Permission.objects.get(codename="manage_observability")
-
-
-@pytest.fixture
-def permission_manage_taxes():
-    return Permission.objects.get(codename="manage_taxes")
-
-
-@pytest.fixture
-def voucher_without_channel(db):
-    voucher = Voucher.objects.create()
-    VoucherCode.objects.create(code="mirumee", voucher=voucher)
-    return voucher
-
-
-@pytest.fixture
-def voucher(voucher_without_channel, channel_USD):
-    VoucherChannelListing.objects.create(
-        voucher=voucher_without_channel,
-        channel=channel_USD,
-        discount=Money(20, channel_USD.currency_code),
-    )
-    return voucher_without_channel
-
-
-@pytest.fixture
-def voucher_with_many_codes(voucher):
-    VoucherCode.objects.bulk_create(
-        [
-            VoucherCode(code="Multi1", voucher=voucher),
-            VoucherCode(code="Multi2", voucher=voucher),
-            VoucherCode(code="Multi3", voucher=voucher),
-            VoucherCode(code="Multi4", voucher=voucher),
-        ]
-    )
-    return voucher
-
-
-@pytest.fixture
-def voucher_with_many_channels(voucher, channel_PLN):
-    VoucherChannelListing.objects.create(
-        voucher=voucher,
-        channel=channel_PLN,
-        discount=Money(80, channel_PLN.currency_code),
-    )
-    return voucher
-
-
-@pytest.fixture
-def voucher_percentage(channel_USD):
-    voucher = Voucher.objects.create(
-        discount_value_type=DiscountValueType.PERCENTAGE,
-    )
-    VoucherCode.objects.create(code="saleor", voucher=voucher)
-    VoucherChannelListing.objects.create(
-        voucher=voucher,
-        channel=channel_USD,
-        discount_value=10,
-        currency=channel_USD.currency_code,
-    )
-    return voucher
-
-
-@pytest.fixture
-def voucher_specific_product_type(voucher_percentage, product):
-    voucher_percentage.products.add(product)
-    voucher_percentage.type = VoucherType.SPECIFIC_PRODUCT
-    voucher_percentage.save()
-    return voucher_percentage
-
-
-@pytest.fixture
-def voucher_with_high_min_spent_amount(channel_USD):
-    voucher = Voucher.objects.create()
-    VoucherCode.objects.create(code="mirumee", voucher=voucher)
-    VoucherChannelListing.objects.create(
-        voucher=voucher,
-        channel=channel_USD,
-        discount=Money(10, channel_USD.currency_code),
-        min_spent_amount=1_000_000,
-    )
-    return voucher
-
-
-@pytest.fixture
-def voucher_shipping_type(channel_USD):
-    voucher = Voucher.objects.create(type=VoucherType.SHIPPING, countries="IS")
-    VoucherCode.objects.create(code="mirumee", voucher=voucher)
-    VoucherChannelListing.objects.create(
-        voucher=voucher,
-        channel=channel_USD,
-        discount=Money(10, channel_USD.currency_code),
-    )
-    return voucher
-
-
-@pytest.fixture
-def voucher_free_shipping(voucher_percentage, channel_USD):
-    voucher_percentage.type = VoucherType.SHIPPING
-    voucher_percentage.name = "Free shipping"
-    voucher_percentage.save()
-    voucher_percentage.channel_listings.filter(channel=channel_USD).update(
-        discount_value=100
-    )
-    return voucher_percentage
-
-
-@pytest.fixture
-def voucher_customer(voucher, customer_user):
-    email = customer_user.email
-    code = voucher.codes.first()
-    return VoucherCustomer.objects.create(voucher_code=code, customer_email=email)
-
-
-@pytest.fixture
-def voucher_multiple_use(voucher_with_many_codes):
-    voucher = voucher_with_many_codes
-    voucher.usage_limit = 3
-    voucher.save(update_fields=["usage_limit"])
-    codes = voucher.codes.all()
-    for code in codes:
-        code.used = 1
-    VoucherCode.objects.bulk_update(codes, ["used"])
-    voucher.refresh_from_db()
-    return voucher
-
-
-@pytest.fixture
-def voucher_single_use(voucher_with_many_codes):
-    voucher = voucher_with_many_codes
-    voucher.single_use = True
-    voucher.save(update_fields=["single_use"])
-    return voucher
-
-
-@pytest.fixture
 def checkout_line_with_reservation_in_many_stocks(
     customer_user, variant_with_many_stocks, checkout
 ):
@@ -2474,138 +1945,6 @@ def checkout_line_with_reserved_preorder_item(
     )
 
     return checkout_line
-
-
-@pytest.fixture
-def gift_card_tag_list(db):
-    tags = [GiftCardTag(name=f"test-tag-{i}") for i in range(5)]
-    return GiftCardTag.objects.bulk_create(tags)
-
-
-@pytest.fixture
-def gift_card(customer_user):
-    gift_card = GiftCard.objects.create(
-        code="never_expiry",
-        created_by=customer_user,
-        created_by_email=customer_user.email,
-        initial_balance=Money(10, "USD"),
-        current_balance=Money(10, "USD"),
-    )
-    tag, _ = GiftCardTag.objects.get_or_create(name="test-tag")
-    gift_card.tags.add(tag)
-    return gift_card
-
-
-@pytest.fixture
-def gift_card_with_metadata(customer_user):
-    return GiftCard.objects.create(
-        code="card_with_meta",
-        created_by=customer_user,
-        created_by_email=customer_user.email,
-        initial_balance=Money(10, "USD"),
-        current_balance=Money(10, "USD"),
-        metadata={"test": "value"},
-    )
-
-
-@pytest.fixture
-def gift_card_expiry_date(customer_user):
-    gift_card = GiftCard.objects.create(
-        code="expiry_date",
-        created_by=customer_user,
-        created_by_email=customer_user.email,
-        initial_balance=Money(20, "USD"),
-        current_balance=Money(20, "USD"),
-        expiry_date=datetime.datetime.now(tz=datetime.UTC).date()
-        + datetime.timedelta(days=100),
-    )
-    tag = GiftCardTag.objects.create(name="another-tag")
-    gift_card.tags.add(tag)
-    return gift_card
-
-
-@pytest.fixture
-def gift_card_used(staff_user, customer_user):
-    gift_card = GiftCard.objects.create(
-        code="giftcard_used",
-        created_by=staff_user,
-        used_by=customer_user,
-        created_by_email=staff_user.email,
-        used_by_email=customer_user.email,
-        initial_balance=Money(100, "USD"),
-        current_balance=Money(80, "USD"),
-    )
-    tag = GiftCardTag.objects.create(name="tag")
-    gift_card.tags.add(tag)
-    return gift_card
-
-
-@pytest.fixture
-def gift_card_created_by_staff(staff_user):
-    gift_card = GiftCard.objects.create(
-        code="created_by_staff",
-        created_by=staff_user,
-        created_by_email=staff_user.email,
-        initial_balance=Money(10, "USD"),
-        current_balance=Money(10, "USD"),
-    )
-    tag, _ = GiftCardTag.objects.get_or_create(name="test-tag")
-    gift_card.tags.add(tag)
-    return gift_card
-
-
-@pytest.fixture
-def gift_card_event(gift_card, order, app, staff_user):
-    parameters = {
-        "message": "test message",
-        "email": "testemail@email.com",
-        "tags": ["test tag"],
-        "old_tags": ["test old tag"],
-        "balance": {
-            "currency": "USD",
-            "initial_balance": 10,
-            "old_initial_balance": 20,
-            "current_balance": 10,
-            "old_current_balance": 5,
-        },
-        "expiry_date": datetime.date(2050, 1, 1),
-        "old_expiry_date": datetime.date(2010, 1, 1),
-    }
-    return GiftCardEvent.objects.create(
-        user=staff_user,
-        app=app,
-        gift_card=gift_card,
-        order=order,
-        type=GiftCardEvents.UPDATED,
-        parameters=parameters,
-        date=timezone.now() + datetime.timedelta(days=10),
-    )
-
-
-@pytest.fixture
-def gift_card_list():
-    gift_cards = list(
-        GiftCard.objects.bulk_create(
-            [
-                GiftCard(
-                    code="code-test-1",
-                    initial_balance=Money(10, "USD"),
-                    current_balance=Money(10, "USD"),
-                ),
-                GiftCard(
-                    code="code-test-2",
-                    initial_balance=Money(10, "USD"),
-                    current_balance=Money(10, "USD"),
-                ),
-                GiftCard(
-                    code="code-test-3",
-                    initial_balance=Money(10, "USD"),
-                    current_balance=Money(10, "USD"),
-                ),
-            ]
-        )
-    )
-    return gift_cards
 
 
 @pytest.fixture
@@ -2765,345 +2104,6 @@ def dummy_webhook_app_payment_data(dummy_payment_data, payment_app):
 
 
 @pytest.fixture
-def catalogue_promotion(channel_USD, product, collection):
-    promotion = Promotion.objects.create(
-        name="Promotion",
-        type=PromotionType.CATALOGUE,
-        description=dummy_editorjs("Test description."),
-        end_date=timezone.now() + datetime.timedelta(days=30),
-    )
-    rules = PromotionRule.objects.bulk_create(
-        [
-            PromotionRule(
-                name="Percentage promotion rule",
-                promotion=promotion,
-                description=dummy_editorjs(
-                    "Test description for percentage promotion rule."
-                ),
-                catalogue_predicate={
-                    "productPredicate": {
-                        "ids": [graphene.Node.to_global_id("Product", product.id)]
-                    }
-                },
-                reward_value_type=RewardValueType.PERCENTAGE,
-                reward_value=Decimal("10"),
-            ),
-            PromotionRule(
-                name="Fixed promotion rule",
-                promotion=promotion,
-                description=dummy_editorjs(
-                    "Test description for fixes promotion rule."
-                ),
-                catalogue_predicate={
-                    "collectionPredicate": {
-                        "ids": [graphene.Node.to_global_id("Collection", collection.id)]
-                    }
-                },
-                reward_value_type=RewardValueType.FIXED,
-                reward_value=Decimal("5"),
-            ),
-        ]
-    )
-    for rule in rules:
-        rule.channels.add(channel_USD)
-    fetch_variants_for_promotion_rules(promotion.rules.all())
-    return promotion
-
-
-@pytest.fixture
-def catalogue_promotion_without_rules(db):
-    promotion = Promotion.objects.create(
-        name="Promotion",
-        description=dummy_editorjs("Test description."),
-        end_date=timezone.now() + datetime.timedelta(days=30),
-        type=PromotionType.CATALOGUE,
-    )
-    return promotion
-
-
-@pytest.fixture
-def order_promotion_without_rules(db):
-    promotion = Promotion.objects.create(
-        name="Promotion",
-        description=dummy_editorjs("Test description."),
-        end_date=timezone.now() + datetime.timedelta(days=30),
-        type=PromotionType.ORDER,
-    )
-    return promotion
-
-
-@pytest.fixture
-def catalogue_promotion_with_single_rule(catalogue_predicate, channel_USD):
-    promotion = Promotion.objects.create(
-        name="Promotion with single rule", type=PromotionType.CATALOGUE
-    )
-    rule = PromotionRule.objects.create(
-        name="Sale rule",
-        promotion=promotion,
-        catalogue_predicate=catalogue_predicate,
-        reward_value_type=RewardValueType.FIXED,
-        reward_value=Decimal(5),
-    )
-    rule.channels.add(channel_USD)
-    return promotion
-
-
-@pytest.fixture
-def order_promotion_with_rule(channel_USD):
-    promotion = Promotion.objects.create(
-        name="Promotion with order rule", type=PromotionType.ORDER
-    )
-    rule = PromotionRule.objects.create(
-        name="Promotion rule",
-        promotion=promotion,
-        order_predicate={
-            "discountedObjectPredicate": {"baseSubtotalPrice": {"range": {"gte": 100}}}
-        },
-        reward_value_type=RewardValueType.FIXED,
-        reward_value=Decimal(5),
-        reward_type=RewardType.SUBTOTAL_DISCOUNT,
-    )
-    rule.channels.add(channel_USD)
-    return promotion
-
-
-@pytest.fixture
-def promotion_list(channel_USD, product, collection):
-    collection.products.add(product)
-    promotions = Promotion.objects.bulk_create(
-        [
-            Promotion(
-                name="Promotion 1",
-                type=PromotionType.CATALOGUE,
-                description=dummy_editorjs("Promotion 1 description."),
-                start_date=timezone.now() + datetime.timedelta(days=1),
-                end_date=timezone.now() + datetime.timedelta(days=10),
-            ),
-            Promotion(
-                name="Promotion 2",
-                type=PromotionType.CATALOGUE,
-                description=dummy_editorjs("Promotion 2 description."),
-                start_date=timezone.now() + datetime.timedelta(days=5),
-                end_date=timezone.now() + datetime.timedelta(days=20),
-            ),
-            Promotion(
-                name="Promotion 3",
-                type=PromotionType.CATALOGUE,
-                description=dummy_editorjs("TePromotion 3 description."),
-                start_date=timezone.now() + datetime.timedelta(days=15),
-                end_date=timezone.now() + datetime.timedelta(days=30),
-            ),
-        ]
-    )
-    rules = PromotionRule.objects.bulk_create(
-        [
-            PromotionRule(
-                name="Promotion 1 percentage rule",
-                promotion=promotions[0],
-                description=dummy_editorjs(
-                    "Test description for promotion 1 percentage rule."
-                ),
-                catalogue_predicate={
-                    "productPredicate": {
-                        "ids": [graphene.Node.to_global_id("Product", product.id)]
-                    }
-                },
-                reward_value_type=RewardValueType.PERCENTAGE,
-                reward_value=Decimal("10"),
-            ),
-            PromotionRule(
-                name="Promotion 1 fixed rule",
-                promotion=promotions[0],
-                description=dummy_editorjs(
-                    "Test description for promotion 1 fixed rule."
-                ),
-                catalogue_predicate={
-                    "collectionPredicate": {
-                        "ids": [graphene.Node.to_global_id("Collection", collection.id)]
-                    }
-                },
-                reward_value_type=RewardValueType.FIXED,
-                reward_value=Decimal("5"),
-            ),
-            PromotionRule(
-                name="Promotion 2 percentage rule",
-                promotion=promotions[1],
-                description=dummy_editorjs(
-                    "Test description for promotion 2 percentage rule."
-                ),
-                catalogue_predicate={
-                    "productPredicate": {
-                        "ids": [graphene.Node.to_global_id("Product", product.id)]
-                    }
-                },
-                reward_value_type=RewardValueType.PERCENTAGE,
-                reward_value=Decimal("10"),
-            ),
-            PromotionRule(
-                name="Promotion 3 fixed rule",
-                promotion=promotions[2],
-                description=dummy_editorjs(
-                    "Test description for promotion 3 fixed rule."
-                ),
-                catalogue_predicate={
-                    "collectionPredicate": {
-                        "ids": [graphene.Node.to_global_id("Collection", collection.id)]
-                    }
-                },
-                reward_value_type=RewardValueType.FIXED,
-                reward_value=Decimal("5"),
-            ),
-        ]
-    )
-    for rule in rules:
-        rule.channels.add(channel_USD)
-    fetch_variants_for_promotion_rules(PromotionRule.objects.all())
-    return promotions
-
-
-@pytest.fixture
-def promotion_rule(channel_USD, catalogue_promotion, product):
-    rule = PromotionRule.objects.create(
-        name="Promotion rule name",
-        promotion=catalogue_promotion,
-        description=dummy_editorjs("Test description for percentage promotion rule."),
-        catalogue_predicate={
-            "productPredicate": {
-                "ids": [graphene.Node.to_global_id("Product", product.id)]
-            }
-        },
-        reward_value_type=RewardValueType.PERCENTAGE,
-        reward_value=Decimal("25"),
-    )
-    rule.channels.add(channel_USD)
-    return rule
-
-
-@pytest.fixture
-def order_promotion_rule(channel_USD, order_promotion_without_rules):
-    rule = PromotionRule.objects.create(
-        name="Order promotion rule",
-        promotion=order_promotion_without_rules,
-        order_predicate={
-            "discountedObjectPredicate": {"baseSubtotalPrice": {"range": {"gte": 20}}}
-        },
-        reward_value_type=RewardValueType.PERCENTAGE,
-        reward_value=Decimal("25"),
-        reward_type=RewardType.SUBTOTAL_DISCOUNT,
-    )
-    rule.channels.add(channel_USD)
-    return rule
-
-
-@pytest.fixture
-def gift_promotion_rule(channel_USD, order_promotion_without_rules, product_list):
-    rule = PromotionRule.objects.create(
-        name="Order promotion rule",
-        promotion=order_promotion_without_rules,
-        order_predicate={
-            "discountedObjectPredicate": {"baseSubtotalPrice": {"range": {"gte": 20}}}
-        },
-        reward_type=RewardType.GIFT,
-    )
-    rule.channels.add(channel_USD)
-    rule.gifts.set([product.variants.first() for product in product_list[:2]])
-    return rule
-
-
-@pytest.fixture
-def rule_info(
-    promotion_rule,
-    promotion_translation_fr,
-    promotion_rule_translation_fr,
-    variant,
-    channel_USD,
-):
-    variant_channel_listing = variant.channel_listings.get(channel_id=channel_USD.id)
-    listing_promotion_rule = variant_channel_listing.variantlistingpromotionrule.create(
-        promotion_rule=promotion_rule,
-        discount_amount=Decimal("10"),
-        currency=channel_USD.currency_code,
-    )
-    return VariantPromotionRuleInfo(
-        rule=promotion_rule,
-        promotion=promotion_rule.promotion,
-        variant_listing_promotion_rule=listing_promotion_rule,
-        promotion_translation=promotion_translation_fr,
-        rule_translation=promotion_rule_translation_fr,
-    )
-
-
-@pytest.fixture
-def catalogue_predicate(product, category, collection, variant):
-    collection_id = graphene.Node.to_global_id("Collection", collection.id)
-    category_id = graphene.Node.to_global_id("Category", category.id)
-    product_id = graphene.Node.to_global_id("Product", product.id)
-    variant_id = graphene.Node.to_global_id("ProductVariant", variant.id)
-    return {
-        "OR": [
-            {"collectionPredicate": {"ids": [collection_id]}},
-            {"categoryPredicate": {"ids": [category_id]}},
-            {"productPredicate": {"ids": [product_id]}},
-            {"variantPredicate": {"ids": [variant_id]}},
-        ]
-    }
-
-
-@pytest.fixture
-def promotion_converted_from_sale(catalogue_predicate, channel_USD):
-    promotion = Promotion.objects.create(name="Sale", type=PromotionType.CATALOGUE)
-    promotion.assign_old_sale_id()
-
-    rule = PromotionRule.objects.create(
-        name="Sale rule",
-        promotion=promotion,
-        catalogue_predicate=catalogue_predicate,
-        reward_value_type=RewardValueType.FIXED,
-        reward_value=Decimal(5),
-        old_channel_listing_id=PromotionRule.get_old_channel_listing_ids(1)[0][0],
-    )
-    rule.channels.add(channel_USD)
-    fetch_variants_for_promotion_rules(promotion.rules.all())
-    return promotion
-
-
-@pytest.fixture
-def promotion_converted_from_sale_with_many_channels(
-    promotion_converted_from_sale, catalogue_predicate, channel_PLN
-):
-    promotion = promotion_converted_from_sale
-    rule = PromotionRule.objects.create(
-        name="Sale rule 2",
-        promotion=promotion,
-        catalogue_predicate=catalogue_predicate,
-        reward_value_type=RewardValueType.FIXED,
-        reward_value=Decimal(5),
-        old_channel_listing_id=PromotionRule.get_old_channel_listing_ids(1)[0][0],
-    )
-    rule.channels.add(channel_PLN)
-    fetch_variants_for_promotion_rules(promotion.rules.all())
-    return promotion
-
-
-@pytest.fixture
-def promotion_converted_from_sale_with_empty_predicate(channel_USD):
-    promotion = Promotion.objects.create(
-        name="Sale with empty predicate", type=PromotionType.CATALOGUE
-    )
-    promotion.assign_old_sale_id()
-    rule = PromotionRule.objects.create(
-        name="Sale with empty predicate rule",
-        promotion=promotion,
-        catalogue_predicate={},
-        reward_value_type=RewardValueType.FIXED,
-        reward_value=Decimal(5),
-        old_channel_listing_id=PromotionRule.get_old_channel_listing_ids(1)[0][0],
-    )
-    rule.channels.add(channel_USD)
-    return promotion
-
-
-@pytest.fixture
 def promotion_events(catalogue_promotion, staff_user):
     promotion = catalogue_promotion
     rule_id = promotion.rules.first().pk
@@ -3150,76 +2150,6 @@ def promotion_events(catalogue_promotion, staff_user):
         ]
     )
     return events
-
-
-@pytest.fixture
-def permission_manage_staff():
-    return Permission.objects.get(codename="manage_staff")
-
-
-@pytest.fixture
-def permission_manage_products():
-    return Permission.objects.get(codename="manage_products")
-
-
-@pytest.fixture
-def permission_manage_product_types_and_attributes():
-    return Permission.objects.get(codename="manage_product_types_and_attributes")
-
-
-@pytest.fixture
-def permission_manage_shipping():
-    return Permission.objects.get(codename="manage_shipping")
-
-
-@pytest.fixture
-def permission_manage_users():
-    return Permission.objects.get(codename="manage_users")
-
-
-@pytest.fixture
-def permission_impersonate_user():
-    return Permission.objects.get(codename="impersonate_user")
-
-
-@pytest.fixture
-def permission_manage_settings():
-    return Permission.objects.get(codename="manage_settings")
-
-
-@pytest.fixture
-def permission_manage_menus():
-    return Permission.objects.get(codename="manage_menus")
-
-
-@pytest.fixture
-def permission_manage_pages():
-    return Permission.objects.get(codename="manage_pages")
-
-
-@pytest.fixture
-def permission_manage_page_types_and_attributes():
-    return Permission.objects.get(codename="manage_page_types_and_attributes")
-
-
-@pytest.fixture
-def permission_manage_translations():
-    return Permission.objects.get(codename="manage_translations")
-
-
-@pytest.fixture
-def permission_manage_webhooks():
-    return Permission.objects.get(codename="manage_webhooks")
-
-
-@pytest.fixture
-def permission_manage_channels():
-    return Permission.objects.get(codename="manage_channels")
-
-
-@pytest.fixture
-def permission_manage_payments():
-    return Permission.objects.get(codename="handle_payments")
 
 
 @pytest.fixture
@@ -3486,15 +2416,6 @@ def category_translation_with_slug_pl(category):
         name="Polish category name",
         slug="polish-category-name",
         description=dummy_editorjs("Polish category description."),
-    )
-
-
-@pytest.fixture
-def shipping_method_translation_fr(shipping_method):
-    return ShippingMethodTranslation.objects.create(
-        language_code="fr",
-        shipping_method=shipping_method,
-        name="French shipping method name",
     )
 
 
@@ -3926,6 +2847,7 @@ def delivery_method(request, warehouse_for_cc, shipping_method):
         return warehouse_for_cc
     if request.param == "shipping_method":
         return shipping_method
+    return None
 
 
 @pytest.fixture
@@ -4995,6 +3917,7 @@ def setup_mock_for_cache():
                     {key: {"value": new_value, "ttl": current_data["ttl"]}}
                 )
                 return new_value
+            return None
 
         mocked_get_cache = MagicMock()
         mocked_set_cache = MagicMock()
