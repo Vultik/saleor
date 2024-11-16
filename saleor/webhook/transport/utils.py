@@ -1,3 +1,4 @@
+import datetime
 import decimal
 import hashlib
 import json
@@ -6,8 +7,9 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
 from time import time
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Union
 from urllib.parse import unquote, urlparse, urlunparse
+from uuid import UUID
 
 import boto3
 from botocore.exceptions import ClientError
@@ -35,6 +37,7 @@ from ...core.tasks import delete_files_from_private_storage_task
 from ...core.taxes import TaxData, TaxLineData
 from ...core.utils import build_absolute_uri
 from ...core.utils.events import call_event
+from ...core.utils.url import sanitize_url_for_logging
 from ...payment import PaymentError
 from ...payment.interface import (
     GatewayResponse,
@@ -84,6 +87,41 @@ class WebhookResponse:
     response_status_code: Optional[int] = None
     status: str = EventDeliveryStatus.SUCCESS
     duration: float = 0.0
+
+
+class RequestorModelName:
+    # lowercase, as it is returned as such by `model._meta.model_name`
+    APP = "app.app"
+    USER = "account.user"
+
+
+@dataclass
+class DeferredPayloadData:
+    model_name: str
+    object_id: Union[int, UUID]
+    requestor_model_name: Optional[str]
+    requestor_object_id: Optional[Union[int, UUID]]
+    request_time: Optional[datetime.datetime]
+
+
+def prepare_deferred_payload_data(
+    subscribable_object, requestor, request_time
+) -> DeferredPayloadData:
+    model_name = (
+        f"{subscribable_object._meta.app_label}.{subscribable_object._meta.model_name}"
+    )
+    requestor_model_name = (
+        f"{requestor._meta.app_label}.{requestor._meta.model_name}"
+        if requestor
+        else None
+    )
+    return DeferredPayloadData(
+        model_name=model_name,
+        object_id=subscribable_object.pk,
+        request_time=request_time,
+        requestor_model_name=requestor_model_name,
+        requestor_object_id=(requestor.pk if requestor else None),
+    )
 
 
 def generate_cache_key_for_webhook(
@@ -312,7 +350,7 @@ def handle_webhook_retry(
     log_extra_details = {
         "webhook": {
             "id": webhook.id,
-            "target_url": webhook.target_url,
+            "target_url": sanitize_url_for_logging(webhook.target_url),
             "event": delivery.event_type,
             "execution_mode": "async",
             "duration": response.duration,
@@ -323,7 +361,7 @@ def handle_webhook_retry(
         "[Webhook ID: %r] Failed request to %r: %r for event: %r."
         " Delivery attempt id: %r",
         webhook.id,
-        webhook.target_url,
+        sanitize_url_for_logging(webhook.target_url),
         response.content,
         delivery.event_type,
         delivery_attempt.id,
@@ -334,7 +372,7 @@ def handle_webhook_retry(
         task_logger.info(
             "[Webhook ID: %r] Failed request to %r: received HTTP %d. Delivery ID: %r",
             webhook.id,
-            webhook.target_url,
+            sanitize_url_for_logging(webhook.target_url),
             response.response_status_code,
             delivery.id,
             extra=log_extra_details,
@@ -352,7 +390,7 @@ def handle_webhook_retry(
         task_logger.info(
             "[Webhook ID: %r] Failed request to %r: exceeded retry limit. Delivery ID: %r",
             webhook.id,
-            webhook.target_url,
+            sanitize_url_for_logging(webhook.target_url),
             delivery.id,
             extra=log_extra_details,
         )
@@ -360,19 +398,39 @@ def handle_webhook_retry(
 
 
 def get_delivery_for_webhook(event_delivery_id) -> Optional["EventDelivery"]:
-    try:
-        delivery = EventDelivery.objects.select_related("payload", "webhook__app").get(
-            id=event_delivery_id
-        )
-    except EventDelivery.DoesNotExist:
-        logger.warning("Event delivery id: %r not found", event_delivery_id)
-        return None
+    delivery = get_multiple_deliveries_for_webhooks([event_delivery_id])
+    return delivery.get(event_delivery_id)
 
-    if not delivery.webhook.is_active:
-        delivery_update(delivery=delivery, status=EventDeliveryStatus.FAILED)
-        logger.info("Event delivery id: %r webhook is disabled.", event_delivery_id)
-        return None
-    return delivery
+
+def get_multiple_deliveries_for_webhooks(
+    event_delivery_ids,
+) -> dict[int, "EventDelivery"]:
+    deliveries = EventDelivery.objects.select_related("payload", "webhook__app").filter(
+        id__in=event_delivery_ids
+    )
+
+    active_deliveries = {}
+    inactive_delivery_ids = set()
+
+    not_found_delivery_ids = set(event_delivery_ids) - {
+        delivery.pk for delivery in deliveries
+    }
+    for not_found_delivery_id in not_found_delivery_ids:
+        logger.warning("Event delivery id: %r not found", not_found_delivery_id)
+
+    for delivery in deliveries:
+        if delivery.webhook.is_active:
+            active_deliveries[delivery.pk] = delivery
+        else:
+            logger.info("Event delivery id: %r webhook is disabled.", delivery.pk)
+            inactive_delivery_ids.add(delivery.pk)
+
+    if inactive_delivery_ids:
+        EventDelivery.objects.filter(id__in=inactive_delivery_ids).update(
+            status=EventDeliveryStatus.FAILED
+        )
+
+    return active_deliveries
 
 
 @contextmanager
