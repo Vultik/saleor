@@ -23,6 +23,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Add `CheckoutCustomerNoteUpdate` mutation - #16315 by @pitkes22
 - Add `customerNote` field to `Checkout` type to make it consistent with `Order` model - #16561 by @Air-t
 - Add `type` field to `TaxableObjectDiscount` type - #16630 by @zedzior
+- Add `productVariants` field to `Product` instead of `variants`. Mark `Product.variants` as deprecated - #16998 by @kadewu
 
 ### Webhooks
 
@@ -42,3 +43,4 @@ All notable, unreleased changes to this project will be documented in this file.
 - Removed support for the django-debug-toolbar debugging tool and the `ENABLE_DEBUG_TOOLBAR` env variable - #16902 by @patrys
 - Fixed playground not displaying docs if api is hidden behind reverse proxy - #16810 by @jqob
 - Drop tax data line number validation for Avatax plugin - #16917 by @zedzior
+- Fix decreasing voucher code usage after changing `includeDraftOrderInVoucherUsage` to false - #17028 by @zedzior
