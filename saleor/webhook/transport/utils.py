@@ -465,15 +465,20 @@ def create_attempt(
 def attempt_update(
     attempt: "EventDeliveryAttempt",
     webhook_response: "WebhookResponse",
+    with_save: bool = True,
 ):
     attempt.duration = webhook_response.duration
-    attempt.response = webhook_response.content
+    attempt.response = webhook_response.content[
+        : settings.EVENT_DELIVERY_ATTEMPT_RESPONSE_SIZE_LIMIT
+    ]
+    if attempt.response != webhook_response.content:
+        attempt.response += "..."
     attempt.response_headers = json.dumps(webhook_response.response_headers)
     attempt.response_status_code = webhook_response.response_status_code
     attempt.request_headers = json.dumps(webhook_response.request_headers)
     attempt.status = webhook_response.status
 
-    if attempt.id:
+    if attempt.id and with_save:
         attempt.save(
             update_fields=[
                 "duration",
