@@ -103,7 +103,7 @@ package-mode = false
 
   [tool.poetry.group.dev.dependencies]
   coverage = "^7.2"
-  deptry = "^0.20.0"
+  deptry = "^0.21.1"
   django-extensions = "^3.1.2"
   django-stubs = { version = "^4.2.7", extras = ["compatible-mypy"] }
   fakeredis = "^2.10"
@@ -112,7 +112,7 @@ package-mode = false
   openpyxl = "^3.1.5"
   pre-commit = "^3.8"
   pytest = "^8.3.2"
-  pytest-asyncio = "^0.23.7"
+  pytest-asyncio = "^0.25.0"
   pytest-celery = "^1.0.1"
   pytest-cov = "^5.0.0"
   pytest-django = "4.9.0"
