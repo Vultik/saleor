@@ -38,6 +38,7 @@ All notable, unreleased changes to this project will be documented in this file.
 
 - Fixed webhookTrigger payload type for events related to ProductVariant - #16956 by @delemeator
 - Truncate lenghty responses in `EventDeliveryAttempt` objects - #17044 by @wcislo-saleor
+- Webhooks `CHECKOUT_FILTER_SHIPPING_METHODS` & `ORDER_FILTER_SHIPPING_METHODS` are no longer executed when not needed (no available shipping methods, e.g. due to lack of shipping address) - #17328 by @lkostrowski
 
 ### Other changes
 - Added support for numeric and lower-case boolean environment variables - #16313 by @NyanKiyoshi
@@ -58,3 +59,4 @@ All notable, unreleased changes to this project will be documented in this file.
 - Fix checkout funds releasing task - #17198 by @IKarbowiak
 - Fixed 'healthcheck' middleware (`/health/` endpoint) not forwarding incoming traffic whenever the protocol wasn't HTTP (such as WebSocket or Lifespan) - #17248 by @NyanKiyoshi
 - Added support for the AWS_S3_URL_PROTOCOL environment variable - #17305 by @p-febis
+- Fixed pycurl dependency and required system libraries to fix Celery worker issues when using SQS by @mariobrgomes
