@@ -24,6 +24,8 @@ All notable, unreleased changes to this project will be documented in this file.
 - Fixed `invoiceRequest` no longer throws an error, when only app with webhook `INVOICE_REQUESTED` is installed, without invoice plugin - #17355 by @witoszekdev
 - Queries: `checkouts`, `checkoutLines`, and `me.checkouts` will no longer trigger external calls to calculate taxes: the `CHECKOUT_CALCULATE_TAXES` webhooks and plugins (including AvataxPlugin) - #17268 by @korycins
 - Queries `checkouts`, `checkoutLines`, and `me.checkouts` will no longer trigger external calls to fetch shipping methods (`SHIPPING_LIST_METHODS_FOR_CHECKOUT`) or to filter the available shipping methods (`CHECKOUT_FILTER_SHIPPING_METHODS`) - #17387 by @korycins
+- Queries: `orders`, `draftOrders` and `me.orders` will no longer trigger external calls to calculate taxes: the `ORDER_CALCULATE_TAXES` webhooks and plugins (including AvataxPlugin) - #17421 by @korycins
+- Queries: `orders`, `draftOrders` and `me.orders` will no longer trigger external calls to filter the available shipping methods (`ORDER_FILTER_SHIPPING_METHODS`) - #17425 by @korycins
 
 ### GraphQL API
 
@@ -48,6 +50,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Truncate lenghty responses in `EventDeliveryAttempt` objects - #17044 by @wcislo-saleor
 - Webhooks `CHECKOUT_FILTER_SHIPPING_METHODS` & `ORDER_FILTER_SHIPPING_METHODS` are no longer executed when not needed (no available shipping methods, e.g. due to lack of shipping address) - #17328 by @lkostrowski
 - New feature: sync webhooks circuit breaker - #16658 by @tomaszszymanski129
+- Fixed webhook `PRODUCT_VARIANT_METADATA_UPDATED` not being sent when `productVariantUpdate` mutation was called. Now, when `metadata` or `privateMetadata` is included in `ProductVariantUpdateInput`, both `PRODUCT_VARIANT_METADATA_UPDATED` and `PRODUCT_VARIANT_UPDATED` will be emitted (if subscribed) - #17406 by @lkostrowski
 
 ### Other changes
 - Added support for numeric and lower-case boolean environment variables - #16313 by @NyanKiyoshi
