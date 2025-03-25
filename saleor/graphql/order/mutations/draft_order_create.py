@@ -45,7 +45,7 @@ from ...core.mutations import ModelWithRestrictedChannelAccessMutation
 from ...core.scalars import PositiveDecimal
 from ...core.types import BaseInputObjectType, NonNullList, OrderError
 from ...core.utils import from_global_id_or_error
-from ...meta.inputs import MetadataInput
+from ...meta.inputs import MetadataInput, MetadataInputDescription
 from ...plugins.dataloaders import get_plugin_manager_promise
 from ...product.types import ProductVariant
 from ...shipping.utils import get_shipping_model_by_object_id
@@ -156,12 +156,14 @@ class DraftOrderInput(BaseInputObjectType):
     )
     metadata = NonNullList(
         MetadataInput,
-        description="Order public metadata." + ADDED_IN_321,
+        description=f"Order public metadata. {ADDED_IN_321} "
+        f"{MetadataInputDescription.PUBLIC_METADATA_INPUT}",
         required=False,
     )
     private_metadata = NonNullList(
         MetadataInput,
-        description="Order private metadata." + ADDED_IN_321,
+        description=f"Order private metadata. {ADDED_IN_321} "
+        f"{MetadataInputDescription.PRIVATE_METADATA_INPUT}",
         required=False,
     )
 
@@ -465,9 +467,6 @@ class DraftOrderCreate(
                 instance=instance.shipping_address,
                 info=info,
             )
-            shipping_address = manager.change_user_address(
-                shipping_address, "shipping", user=instance
-            )
             cleaned_input["shipping_address"] = shipping_address
             cleaned_input["draft_save_shipping_address"] = (
                 save_shipping_address or False
@@ -488,9 +487,6 @@ class DraftOrderCreate(
                 address_type=AddressType.BILLING,
                 instance=instance.billing_address,
                 info=info,
-            )
-            billing_address = manager.change_user_address(
-                billing_address, "billing", user=instance
             )
             cleaned_input["billing_address"] = billing_address
             cleaned_input["draft_save_billing_address"] = save_billing_address or False

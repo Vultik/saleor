@@ -37,6 +37,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Queries `checkouts`, `checkoutLines`, and `me.checkouts` will no longer trigger external calls to fetch shipping methods (`SHIPPING_LIST_METHODS_FOR_CHECKOUT`) or to filter the available shipping methods (`CHECKOUT_FILTER_SHIPPING_METHODS`) - #17387 by @korycins
 - Queries: `orders`, `draftOrders` and `me.orders` will no longer trigger external calls to calculate taxes: the `ORDER_CALCULATE_TAXES` webhooks and plugins (including AvataxPlugin) - #17421 by @korycins
 - Queries: `orders`, `draftOrders` and `me.orders` will no longer trigger external calls to filter the available shipping methods (`ORDER_FILTER_SHIPPING_METHODS`) - #17425 by @korycins
+- Drop `change_user_address` method from plugin manager - #17495 by @IKarbowiak
 
 ### GraphQL API
 
@@ -91,4 +92,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Use denormalized base prices during order update - #17160 by @zedzior
   - `UNCONFIRMED` orders will never refresh its base prices
   - `DRAFT` orders will refresh its base prices after default 24 hours
+- Added a warning to metadata input fields in GraphQL schema informing to never store sensitive data.
+  This ensures user awareness of potential security policy violations and compliance risks of storing
+  certain types of data. - #17506 by @NyanKiyoshi
 - Improve status calculation for orders with waiting-for-approval fulfillments - #17471 by @delemeator

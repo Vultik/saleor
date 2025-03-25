@@ -31,7 +31,7 @@ from ...core.doc_category import DOC_CATEGORY_USERS
 from ...core.enums import LanguageCodeEnum
 from ...core.mutations import DeprecatedModelMutation, ModelDeleteMutation
 from ...core.types import BaseInputObjectType, NonNullList
-from ...meta.inputs import MetadataInput
+from ...meta.inputs import MetadataInput, MetadataInputDescription
 from ...plugins.dataloaders import get_plugin_manager_promise
 from ..utils import (
     get_not_manageable_permissions_when_deactivate_or_remove_users,
@@ -112,7 +112,6 @@ class BaseAddressUpdate(DeprecatedModelMutation, I18nMixin):
             user.search_document = prepare_user_search_document_value(user)
             user.save(update_fields=["search_document", "updated_at"])
         manager = get_plugin_manager_promise(info.context).get()
-        address = manager.change_user_address(address, None, user)
         cls.call_event(manager.address_updated, address)
 
         success_response = cls.success_response(address)
@@ -188,12 +187,18 @@ class UserInput(BaseInputObjectType):
     note = graphene.String(description="A note about the user.")
     metadata = NonNullList(
         MetadataInput,
-        description="Fields required to update the user metadata.",
+        description=(
+            "Fields required to update the user metadata. "
+            f"{MetadataInputDescription.PUBLIC_METADATA_INPUT}"
+        ),
         required=False,
     )
     private_metadata = NonNullList(
         MetadataInput,
-        description="Fields required to update the user private metadata.",
+        description=(
+            "Fields required to update the user private metadata. "
+            f"{MetadataInputDescription.PRIVATE_METADATA_INPUT}"
+        ),
         required=False,
     )
 
@@ -349,16 +354,10 @@ class BaseCustomerCreate(DeprecatedModelMutation, I18nMixin):
         default_shipping_address = cleaned_input.get(SHIPPING_ADDRESS_FIELD)
         manager = get_plugin_manager_promise(info.context).get()
         if default_shipping_address:
-            default_shipping_address = manager.change_user_address(
-                default_shipping_address, "shipping", instance
-            )
             default_shipping_address.save()
             instance.default_shipping_address = default_shipping_address
         default_billing_address = cleaned_input.get(BILLING_ADDRESS_FIELD)
         if default_billing_address:
-            default_billing_address = manager.change_user_address(
-                default_billing_address, "billing", instance
-            )
             default_billing_address.save()
             instance.default_billing_address = default_billing_address
 
