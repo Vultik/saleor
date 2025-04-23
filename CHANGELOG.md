@@ -16,6 +16,8 @@ All notable, unreleased changes to this project will be documented in this file.
       - `draftOrderUpdate`
 	- The flag must be provided as part of an address; otherwise, an error is raised.
 	- Does not apply to Click & Collect delivery methods — shipping address is not saved in such case.
+- Add OpenTelemetry support - #17456 by @maarcingebala & @przlada
+  - Saleor now supports OpenTelemetry as a standard telemetry solution. See the [documentation](https://docs.saleor.io/setup/telemetry) for more information.
 
 ### Breaking changes
 
@@ -65,7 +67,8 @@ All notable, unreleased changes to this project will be documented in this file.
 - `orderUpdate` mutation now allows to update `metadata` and `privateMetadata` via `OrderUpdateInput` - #1508 by @lkostrowski
 - `DraftOrderInput`, `OrderUpdateInput` and `DraftOrderCreateInput` now allow to provide `languageCode` - #17553 by @lkostrowski
 - Expose line-level discounts through the `OrderLineDiscount` type, retrievable via the `OrderLine.discounts` API field - #17510 by @korycins
-- Introduce total field in OrderDiscount to replace the amount field, with OrderDiscount.amount now deprecated. - #17510 by @korycins
+- Introduce total field in OrderDiscount to replace the amount field, with OrderDiscount.amount now deprecated - #17510 by @korycins
+- Introduce `useLegacyLineVoucherPropagation` flag to control legacy propagation behavior for specific voucher types - #17587 - by @korycins
 
 ### Webhooks
 

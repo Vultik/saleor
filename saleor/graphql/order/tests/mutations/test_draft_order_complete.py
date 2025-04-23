@@ -1,6 +1,6 @@
 import datetime
 from decimal import Decimal
-from unittest.mock import call, patch
+from unittest.mock import ANY, call, patch
 
 import graphene
 from django.db.models import Sum
@@ -1404,10 +1404,6 @@ def test_draft_order_complete_with_catalogue_and_order_discount(
     expected_unit_discount_amount = rule_catalogue_value
 
     assert line_2["totalPrice"]["net"]["amount"] == float(line_2_total)
-    assert line_2["unitDiscount"]["amount"] == expected_unit_discount_amount
-    assert line_2["unitDiscountReason"] == expected_discount_reason
-    assert line_2["unitDiscountType"] == DiscountValueType.FIXED.upper()
-    assert line_2["unitDiscountValue"] == rule_catalogue_value
 
     assigned_discount_objects = line_2["discounts"]
     assert len(assigned_discount_objects) == 1
@@ -1495,10 +1491,6 @@ def test_draft_order_complete_with_catalogue_and_gift_discount(
     expected_line_2_unit_discount_amount = rule_catalogue_value
 
     assert line_2["totalPrice"]["net"]["amount"] == line_2_total
-    assert line_2["unitDiscount"]["amount"] == rule_catalogue_value
-    assert line_2["unitDiscountReason"] == expected_line_2_discount_reason
-    assert line_2["unitDiscountType"] == DiscountValueType.FIXED.upper()
-    assert line_2["unitDiscountValue"] == rule_catalogue_value
 
     assigned_discount_objects = line_2["discounts"]
     assert len(assigned_discount_objects) == 1
@@ -1706,7 +1698,7 @@ def test_draft_order_complete_triggers_webhooks(
     mocked_send_webhook_request_async.assert_has_calls(
         [
             call(
-                kwargs={"event_delivery_id": delivery.id},
+                kwargs={"event_delivery_id": delivery.id, "telemetry_context": ANY},
                 queue=settings.ORDER_WEBHOOK_EVENTS_CELERY_QUEUE_NAME,
                 bind=True,
                 retry_backoff=10,
