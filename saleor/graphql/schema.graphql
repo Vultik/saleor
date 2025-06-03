@@ -5326,6 +5326,13 @@ type TaxConfiguration implements Node & ObjectWithMetadata @doc(category: "Taxes
   Added in Saleor 3.19.
   """
   taxAppId: String
+
+  """
+  Determines whether to use weighted tax for shipping. When set to true, the tax rate for shipping will be calculated based on the weighted average of tax rates from the order or checkout lines.
+  
+  Added in Saleor 3.21.
+  """
+  useWeightedTaxForShipping: Boolean
 }
 
 enum TaxCalculationStrategy @doc(category: "Taxes") {
@@ -5357,6 +5364,13 @@ type TaxConfigurationPerCountry @doc(category: "Taxes") {
   Added in Saleor 3.19.
   """
   taxAppId: String
+
+  """
+  Determines whether to use weighted tax for shipping. When set to true, the tax rate for shipping will be calculated based on the weighted average of tax rates from the order or checkout lines.
+  
+  Added in Saleor 3.21.
+  """
+  useWeightedTaxForShipping: Boolean
 }
 
 """Represents shipping method postal code rule."""
@@ -6648,7 +6662,16 @@ input AttributeInput @doc(category: "Attributes") {
   """Internal representation of an attribute name."""
   slug: String!
 
-  """Internal representation of a value (unique per attribute)."""
+  """
+  Names corresponding to the attributeValues associated with the Attribute. When specified, it filters the results to include only records with one of the matching values.
+  
+  Added in Saleor 3.22.
+  """
+  valueNames: [String!]
+
+  """
+  Slugs identifying the attributeValues associated with the Attribute. When specified, it filters the results to include only records with one of the matching values.
+  """
   values: [String!]
 
   """The range that the returned values should be in."""
@@ -12785,9 +12808,6 @@ input OrderWhereInput @doc(category: "Orders") {
   """Filter by user email."""
   userEmail: StringFilterInput
 
-  """Filter by payment status."""
-  paymentStatus: PaymentStatusEnumFilterInput
-
   """Filter by authorize status."""
   authorizeStatus: OrderAuthorizeStatusEnumFilterInput
 
@@ -12834,14 +12854,6 @@ input IntFilterInput {
 
   """The value in range."""
   range: IntRangeInput
-}
-
-input PaymentStatusEnumFilterInput @doc(category: "Orders") {
-  """The value equal to."""
-  eq: PaymentChargeStatusEnum
-
-  """The value included in."""
-  oneOf: [PaymentChargeStatusEnum!]
 }
 
 """Filter by authorize status."""
@@ -19355,6 +19367,13 @@ input TaxConfigurationUpdateInput @doc(category: "Taxes") {
   removeCountriesConfiguration: [CountryCode!]
 
   """
+  Determines whether to use weighted tax for shipping. When set to true, the tax rate for shipping will be calculated based on the weighted average of tax rates from the order or checkout lines. Default value is `False`.Can be used only with `taxCalculationStrategy` set to `FLAT_RATES`.
+  
+  Added in Saleor 3.21.
+  """
+  useWeightedTaxForShipping: Boolean
+
+  """
   The tax app `App.identifier` that will be used to calculate the taxes for the given channel. Empty value for `TAX_APP` set as `taxCalculationStrategy` means that Saleor will iterate over all installed tax apps. If multiple tax apps exist with provided tax app id use the `App` with newest `created` date. It's possible to set plugin by using prefix `plugin:` with `PLUGIN_ID` e.g. with Avalara `plugin:mirumee.taxes.avalara`.Will become mandatory in 4.0 for `TAX_APP` `taxCalculationStrategy`.
   
   Added in Saleor 3.19.
@@ -19385,6 +19404,13 @@ input TaxConfigurationPerCountryInput @doc(category: "Taxes") {
   Added in Saleor 3.19.
   """
   taxAppId: String
+
+  """
+  Determines whether to use weighted tax for shipping. When set to true, the tax rate for shipping will be calculated based on the weighted average of tax rates from the order or checkout lines. Default value is `False`.Can be used only with `taxCalculationStrategy` set to `FLAT_RATES`.
+  
+  Added in Saleor 3.21.
+  """
+  useWeightedTaxForShipping: Boolean
 }
 
 """
