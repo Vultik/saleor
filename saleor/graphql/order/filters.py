@@ -12,7 +12,7 @@ from ...core.postgres import FlatConcat
 from ...giftcard import GiftCardEvents
 from ...giftcard.models import GiftCardEvent
 from ...invoice.models import Invoice
-from ...order.models import Order, OrderLine
+from ...order.models import Fulfillment, Order, OrderLine
 from ...order.search import search_orders
 from ...payment import ChargeStatus
 from ...product.models import ProductVariant
@@ -37,7 +37,6 @@ from ..core.types import (
     NonNullList,
 )
 from ..core.types.filter_input import (
-    DateTimeFilterInput,
     FilterInputDescriptions,
     GlobalIDFilterInput,
     IntFilterInput,
@@ -56,9 +55,9 @@ from ..utils.filters import (
     filter_where_by_numeric_field,
     filter_where_by_range_field,
     filter_where_by_value_field,
-    filter_where_range_field,
 )
 from .enums import (
+    FulfillmentStatusEnum,
     OrderAuthorizeStatusEnum,
     OrderChargeStatusEnum,
     OrderStatusEnum,
@@ -264,6 +263,15 @@ def filter_has_invoices(qs, value):
     return qs.filter(~Exists(invoices))
 
 
+def filter_has_fulfillments(qs, value):
+    if value is None:
+        return qs.none()
+    fulfillments = Fulfillment.objects.using(qs.db).filter(order_id=OuterRef("id"))
+    if value:
+        return qs.filter(Exists(fulfillments))
+    return qs.filter(~Exists(fulfillments))
+
+
 class DraftOrderFilter(MetadataFilterBase):
     customer = django_filters.CharFilter(method=filter_customer)
     created = ObjectTypeFilter(input_class=DateRangeInput, method=filter_created_range)
@@ -371,6 +379,29 @@ class InvoiceFilterInput(BaseInputObjectType):
         description = "Filter input for invoices."
 
 
+class FulfillmentStatusEnumFilterInput(BaseInputObjectType):
+    eq = FulfillmentStatusEnum(description=FilterInputDescriptions.EQ, required=False)
+    one_of = NonNullList(
+        FulfillmentStatusEnum,
+        description=FilterInputDescriptions.ONE_OF,
+        required=False,
+    )
+
+    class Meta:
+        doc_category = DOC_CATEGORY_ORDERS
+        description = "Filter by fulfillment status."
+
+
+class FulfillmentFilterInput(BaseInputObjectType):
+    status = FulfillmentStatusEnumFilterInput(
+        description="Filter by fulfillment status."
+    )
+
+    class Meta:
+        doc_category = DOC_CATEGORY_ORDERS
+        description = "Filter input for fulfillments."
+
+
 # TODO: metadata filter will be added later
 class OrderWhere(WhereFilterSet):
     ids = GlobalIDMultipleChoiceWhereFilter(method=filter_by_ids("Order"))
@@ -385,12 +416,12 @@ class OrderWhere(WhereFilterSet):
         help_text="Filter by channel.",
     )
     created_at = ObjectTypeWhereFilter(
-        input_class=DateTimeFilterInput,
+        input_class=DateTimeRangeInput,
         method="filter_created_at_range",
         help_text="Filter order by created at date.",
     )
     updated_at = ObjectTypeWhereFilter(
-        input_class=DateTimeFilterInput,
+        input_class=DateTimeRangeInput,
         method="filter_updated_at_range",
         help_text="Filter order by updated at date.",
     )
@@ -459,6 +490,20 @@ class OrderWhere(WhereFilterSet):
         method="filter_invoices",
         help_text="Filter by invoice data associated with the order.",
     )
+    has_fulfillments = BooleanWhereFilter(
+        method="filter_has_fulfillments",
+        help_text="Filter by whether the order has any fulfillments.",
+    )
+    fulfillments = ObjectTypeWhereFilter(
+        input_class=FulfillmentFilterInput,
+        method="filter_fulfillments",
+        help_text="Filter by fulfillment data associated with the order.",
+    )
+    lines_count = OperationObjectTypeWhereFilter(
+        input_class=IntFilterInput,
+        method="filter_lines_count",
+        help_text="Filter by number of lines in the order.",
+    )
 
     @staticmethod
     def filter_number(qs, _, value):
@@ -472,11 +517,11 @@ class OrderWhere(WhereFilterSet):
 
     @staticmethod
     def filter_created_at_range(qs, _, value):
-        return filter_where_range_field(qs, "created_at", value)
+        return filter_where_by_range_field(qs, "created_at", value)
 
     @staticmethod
     def filter_updated_at_range(qs, _, value):
-        return filter_where_range_field(qs, "updated_at", value)
+        return filter_where_by_range_field(qs, "updated_at", value)
 
     @staticmethod
     def filter_user(qs, _, value):
@@ -548,6 +593,25 @@ class OrderWhere(WhereFilterSet):
             )
             return qs.filter(Exists(invoices.filter(order_id=OuterRef("id"))))
         return qs.none()
+
+    @staticmethod
+    def filter_has_fulfillments(qs, _, value):
+        return filter_has_fulfillments(qs, value)
+
+    @staticmethod
+    def filter_fulfillments(qs, _, value):
+        if value is None:
+            return qs.none()
+        if filter_value := value.get("status"):
+            fulfillments = filter_where_by_value_field(
+                Fulfillment.objects.using(qs.db), "status", filter_value
+            )
+            return qs.filter(Exists(fulfillments.filter(order_id=OuterRef("id"))))
+        return qs.none()
+
+    @staticmethod
+    def filter_lines_count(qs, _, value):
+        return filter_where_by_numeric_field(qs, "lines_count", value)
 
 
 class OrderWhereInput(WhereInputObjectType):

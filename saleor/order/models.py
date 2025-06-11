@@ -395,6 +395,7 @@ class Order(ModelWithMetadata, ModelWithExternalReference):
                 name="order_user_email_user_id_idx",
             ),
             BTreeIndex(fields=["checkout_token"], name="checkout_token_btree_idx"),
+            BTreeIndex(fields=["lines_count"], name="lines_count_idx"),
         ]
 
     def is_fully_paid(self):
@@ -786,6 +787,10 @@ class Fulfillment(ModelWithMetadata):
 
     class Meta(ModelWithMetadata.Meta):
         ordering = ("pk",)
+        indexes = [
+            *ModelWithMetadata.Meta.indexes,
+            BTreeIndex(fields=["status"], name="fulfillment_status_idx"),
+        ]
 
     def __str__(self):
         return f"Fulfillment #{self.composed_id}"
