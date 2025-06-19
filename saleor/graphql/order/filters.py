@@ -27,12 +27,13 @@ from ..core.filters import (
     ObjectTypeFilter,
     ObjectTypeWhereFilter,
     OperationObjectTypeWhereFilter,
-    WhereFilterSet,
 )
+from ..core.filters.where_filters import MetadataWhereBase, filter_where_metadata
 from ..core.filters.where_input import (
     FilterInputDescriptions,
     GlobalIDFilterInput,
     IntFilterInput,
+    MetadataFilterInput,
     PriceFilterInput,
     StringFilterInput,
     UUIDFilterInput,
@@ -274,6 +275,23 @@ def filter_has_fulfillments(qs, value):
     return qs.filter(~Exists(fulfillments))
 
 
+def filter_fulfillments(qs, value):
+    if value is None:
+        return qs.none()
+    fulfillment_qs = None
+    if status_value := value.get("status"):
+        fulfillment_qs = filter_where_by_value_field(
+            Fulfillment.objects.using(qs.db), "status", status_value
+        )
+    if metadata_value := value.get("metadata"):
+        fulfillment_qs = filter_where_metadata(
+            fulfillment_qs or Fulfillment.objects.using(qs.db), None, metadata_value
+        )
+    if fulfillment_qs is not None:
+        return qs.filter(Exists(fulfillment_qs.filter(order_id=OuterRef("id"))))
+    return qs.none()
+
+
 class DraftOrderFilter(MetadataFilterBase):
     customer = django_filters.CharFilter(method=filter_customer)
     created = ObjectTypeFilter(input_class=DateRangeInput, method=filter_created_range)
@@ -398,14 +416,24 @@ class FulfillmentFilterInput(BaseInputObjectType):
     status = FulfillmentStatusEnumFilterInput(
         description="Filter by fulfillment status."
     )
+    metadata = MetadataFilterInput(description="Filter by metadata fields.")
 
     class Meta:
         doc_category = DOC_CATEGORY_ORDERS
-        description = "Filter input for fulfillments."
+        description = "Filter input for order fulfillments data."
 
 
-# TODO: metadata filter will be added later
-class OrderWhere(WhereFilterSet):
+class LinesFilterInput(BaseInputObjectType):
+    metadata = MetadataFilterInput(
+        description="Filter by metadata fields of order lines."
+    )
+
+    class Meta:
+        doc_category = DOC_CATEGORY_ORDERS
+        description = "Filter input for order lines data."
+
+
+class OrderWhere(MetadataWhereBase):
     ids = GlobalIDMultipleChoiceWhereFilter(method=filter_by_ids("Order"))
     number = OperationObjectTypeWhereFilter(
         input_class=IntFilterInput,
@@ -501,6 +529,11 @@ class OrderWhere(WhereFilterSet):
         method="filter_fulfillments",
         help_text="Filter by fulfillment data associated with the order.",
     )
+    lines = ObjectTypeWhereFilter(
+        input_class=LinesFilterInput,
+        method="filter_lines",
+        help_text="Filter by metadata fields of order lines.",
+    )
     lines_count = OperationObjectTypeWhereFilter(
         input_class=IntFilterInput,
         method="filter_lines_count",
@@ -515,6 +548,11 @@ class OrderWhere(WhereFilterSet):
         input_class=PriceFilterInput,
         method="filter_total_net",
         help_text="Filter by total net amount of the order.",
+    )
+    product_type_id = OperationObjectTypeWhereFilter(
+        input_class=GlobalIDFilterInput,
+        method="filter_product_type_id",
+        help_text="Filter by the product type of related order lines.",
     )
 
     @staticmethod
@@ -612,13 +650,17 @@ class OrderWhere(WhereFilterSet):
 
     @staticmethod
     def filter_fulfillments(qs, _, value):
-        if value is None:
-            return qs.none()
-        if filter_value := value.get("status"):
-            fulfillments = filter_where_by_value_field(
-                Fulfillment.objects.using(qs.db), "status", filter_value
+        return filter_fulfillments(qs, value)
+
+    @staticmethod
+    def filter_lines(qs, _, value):
+        if not value:
+            return qs
+        if metadata_value := value.get("metadata"):
+            lines_qs = filter_where_metadata(
+                OrderLine.objects.using(qs.db), None, metadata_value
             )
-            return qs.filter(Exists(fulfillments.filter(order_id=OuterRef("id"))))
+            return qs.filter(Exists(lines_qs.filter(order_id=OuterRef("id"))))
         return qs.none()
 
     @staticmethod
@@ -632,6 +674,16 @@ class OrderWhere(WhereFilterSet):
     @staticmethod
     def filter_total_net(qs, _, value):
         return filter_where_by_price_field(qs, "total_net_amount", value)
+
+    @staticmethod
+    def filter_product_type_id(qs, _, value):
+        if not value:
+            return qs
+
+        line_qs = filter_where_by_id_field(
+            OrderLine.objects.using(qs.db), "product_type_id", value, "ProductType"
+        )
+        return qs.filter(Exists(line_qs.filter(order_id=OuterRef("id"))))
 
 
 class OrderWhereInput(WhereInputObjectType):
