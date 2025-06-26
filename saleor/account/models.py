@@ -190,6 +190,9 @@ class User(
     search_document = models.TextField(blank=True, default="")
     uuid = models.UUIDField(default=uuid4, unique=True)
 
+    # Denormalized number of orders placed by the user
+    number_of_orders = models.PositiveIntegerField(default=0, db_default=0)
+
     USERNAME_FIELD = "email"
     RETURN_ID_IN_API_RESPONSE = True
 
@@ -236,6 +239,10 @@ class User(
             BTreeIndex(
                 fields=["date_joined"],
                 name="user_date_joined_idx",
+            ),
+            BTreeIndex(
+                fields=["email"],
+                name="user_email_idx",
             ),
         ]
 

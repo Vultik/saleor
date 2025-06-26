@@ -341,7 +341,7 @@ type Query {
     """Filtering options for categories."""
     filter: CategoryFilterInput
 
-    """Where filtering options."""
+    """Where filtering options for categories."""
     where: CategoryWhereInput
 
     """Sort categories."""
@@ -411,7 +411,7 @@ type Query {
     """Filtering options for collections."""
     filter: CollectionFilterInput
 
-    """Where filtering options."""
+    """Where filtering options for collections."""
     where: CollectionWhereInput
 
     """Sort collections."""
@@ -466,9 +466,9 @@ type Query {
   """
   products(
     """Filtering options for products."""
-    filter: ProductFilterInput
+    filter: ProductFilterInput @deprecated(reason: "Use `where` filter instead.")
 
-    """Where filtering options."""
+    """Where filtering options for products."""
     where: ProductWhereInput
 
     """Sort products."""
@@ -558,7 +558,7 @@ type Query {
     """Filtering options for product variant."""
     filter: ProductVariantFilterInput
 
-    """Where filtering options."""
+    """Where filtering options for product variants."""
     where: ProductVariantWhereInput
 
     """Sort products variants."""
@@ -795,7 +795,7 @@ type Query {
     sortBy: OrderSortingInput
 
     """Filtering options for orders."""
-    filter: OrderFilterInput
+    filter: OrderFilterInput @deprecated(reason: "Use `where` filter instead.")
 
     """
     Where filtering options for orders.
@@ -1191,7 +1191,7 @@ type Query {
   Requires one of the following permissions: MANAGE_DISCOUNTS.
   """
   promotions(
-    """Where filtering options."""
+    """Where filtering options for promotions."""
     where: PromotionWhereInput
 
     """Sort promotions."""
@@ -1343,9 +1343,9 @@ type Query {
   """List of the shop's attributes."""
   attributes(
     """Filtering options for attributes."""
-    filter: AttributeFilterInput
+    filter: AttributeFilterInput @deprecated(reason: "Use `where` filter instead.")
 
-    """Filtering options for attributes."""
+    """Where filtering options for attributes."""
     where: AttributeWhereInput
 
     """Search attributes."""
@@ -5685,7 +5685,7 @@ type Product implements Node & ObjectWithMetadata @doc(category: "Products") {
     """Filtering options for product variant."""
     filter: ProductVariantFilterInput
 
-    """Where filtering options."""
+    """Where filtering options for product variants."""
     where: ProductVariantWhereInput
 
     """Sort products variants."""
@@ -5863,8 +5863,14 @@ type ProductType implements Node & ObjectWithMetadata @doc(category: "Products")
   Requires one of the following permissions: MANAGE_PRODUCTS.
   """
   availableAttributes(
-    filter: AttributeFilterInput
+    """Filtering options for attributes of this product type."""
+    filter: AttributeFilterInput @deprecated(reason: "Use `where` filter instead.")
+
+    """Where filtering options for attributes of this product type."""
     where: AttributeWhereInput
+
+    """Search attributes."""
+    search: String
 
     """Return the elements in the list that come before the specified cursor."""
     before: String
@@ -6632,14 +6638,19 @@ type Category implements Node & ObjectWithMetadata @doc(category: "Products") {
   List of products in the category. Requires the following permissions to include the unpublished items: MANAGE_ORDERS, MANAGE_DISCOUNTS, MANAGE_PRODUCTS.
   """
   products(
-    """Filtering options for products."""
+    """
+    Filtering options for products. {DEPRECATED_IN_3X_INPUT} Use `where` filter instead.
+    """
     filter: ProductFilterInput
 
-    """Filtering options for products."""
+    """Where filtering options for products."""
     where: ProductWhereInput
 
     """Sort products."""
     sortBy: ProductOrder
+
+    """Search products."""
+    search: String
 
     """Slug of a channel for which the data should be returned."""
     channel: String
@@ -7990,10 +8001,13 @@ type Collection implements Node & ObjectWithMetadata @doc(category: "Products") 
   """List of products in this collection."""
   products(
     """Filtering options for products."""
-    filter: ProductFilterInput
+    filter: ProductFilterInput @deprecated(reason: "Use `where` filter instead.")
 
-    """Filtering options for products."""
+    """Where filtering options for products."""
     where: ProductWhereInput
+
+    """Search products."""
+    search: String
 
     """Sort products."""
     sortBy: ProductOrder
@@ -8562,8 +8576,14 @@ type PageType implements Node & ObjectWithMetadata @doc(category: "Pages") {
   Requires one of the following permissions: MANAGE_PAGES, MANAGE_PAGE_TYPES_AND_ATTRIBUTES.
   """
   availableAttributes(
-    filter: AttributeFilterInput
+    """Filtering options for attributes."""
+    filter: AttributeFilterInput @deprecated(reason: "Use `where` filter instead.")
+
+    """Where filtering options for attributes."""
     where: AttributeWhereInput
+
+    """Search attributes."""
+    search: String
 
     """Return the elements in the list that come before the specified cursor."""
     before: String
@@ -13071,6 +13091,9 @@ input OrderWhereInput @doc(category: "Orders") {
   """Filter by number of lines in the order."""
   linesCount: IntFilterInput
 
+  """Filter by transaction data associated with the order."""
+  transactions: TransactionFilterInput
+
   """Filter by total gross amount of the order."""
   totalGross: PriceFilterInput
 
@@ -13166,6 +13189,47 @@ input FulfillmentStatusEnumFilterInput @doc(category: "Orders") {
 input LinesFilterInput @doc(category: "Orders") {
   """Filter by metadata fields of order lines."""
   metadata: MetadataFilterInput
+}
+
+"""Filter input for transactions."""
+input TransactionFilterInput @doc(category: "Orders") {
+  """Filter by payment method details used to pay for the order."""
+  paymentMethodDetails: PaymentMethodDetailsFilterInput
+}
+
+input PaymentMethodDetailsFilterInput {
+  """Filter by payment method type used to pay for the order."""
+  type: PaymentMethodTypeEnumFilterInput
+
+  """
+  Filter by card details used to pay for the order. Skips `type` filter if provided.
+  """
+  card: PaymentMethodDetailsCardFilterInput
+}
+
+input PaymentMethodTypeEnumFilterInput {
+  """The value equal to."""
+  eq: PaymentMethodTypeEnum
+
+  """The value included in."""
+  oneOf: [PaymentMethodTypeEnum!]
+}
+
+"""
+Represents possible payment method types.
+
+    The following types are possible:
+    CARD - represents a card payment method.
+    OTHER - represents any payment method that is not a card payment.
+"""
+enum PaymentMethodTypeEnum @doc(category: "Payments") {
+  CARD
+  OTHER
+}
+
+input PaymentMethodDetailsCardFilterInput {
+  """Filter by payment method brand used to pay for the order."""
+  brand: StringFilterInput
 }
 
 input PriceFilterInput {
@@ -14418,6 +14482,12 @@ input CustomerWhereInput @doc(category: "Users") {
   metadata: MetadataFilterInput
   ids: [ID!]
 
+  """Filter by email address."""
+  email: StringFilterInput
+
+  """Filter by whether the user is active."""
+  isActive: Boolean
+
   """Filter by date joined."""
   dateJoined: DateTimeRangeInput
 
@@ -14427,11 +14497,19 @@ input CustomerWhereInput @doc(category: "Users") {
   """Filter by date when orders were placed."""
   placedOrdersAt: DateTimeRangeInput
 
+  """Filter by addresses data associated with user."""
+  addresses: AddressFilterInput
+
   """List of conditions that must be met."""
   AND: [CustomerWhereInput!]
 
   """A list of conditions of which at least one must be met."""
   OR: [CustomerWhereInput!]
+}
+
+"""Filtering options for addresses."""
+input AddressFilterInput @doc(category: "Users") {
+  phoneNumber: StringFilterInput
 }
 
 input UserSortingInput @doc(category: "Users") {

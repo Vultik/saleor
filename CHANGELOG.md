@@ -27,6 +27,7 @@ All notable, unreleased changes to this project will be documented in this file.
     - Filter by order by associated lines metadata.
     - Filter by the product type of related order lines.
     - Filter by associated event type and date
+    - Filter by associated payment method name and type
 - Extend the `Page` type with an `attribute` field. Adds support for querying a specific attribute on a page by `slug`, returning the matching attribute and its assigned values, or null if no match is found.
 - Enhanced order search options. Orders can now be searched using:
   - The order's ID
@@ -39,6 +40,22 @@ All notable, unreleased changes to this project will be documented in this file.
 - You can now filter and search customers using the new `where` and `search` fields on the `customers` query.
   - Use `where` to define complex conditions with `AND`/`OR` logic and operators like `eq`, `oneOf`, `range`.
   - Use `search` to perform full-text search across relevant fields.
+  - Introduced new filtering options for customers:
+    - Filter by email address.
+    - Filter by active status (`isActive`).
+    - Filter by phone numbers associated with user addresses.
+- Deprecated the `filter` argument in favor of the new `where` and `search` arguments.
+  The `where` argument introduces more flexible filtering, allowing complex conditions using `AND`/`OR` logic and operators such as `eq`, `oneOf`, and `range`.
+
+  The `filter` argument has been deprecated in the following queries:
+  - `attributes`
+  - `customers`
+  - `products`
+  - `orders`
+  - `productType.availableAttributes`
+  - `category.products`
+  - `collection.products`
+  - `pageType.availableAttributes`
 
 ### Webhooks
 - Transaction webhooks responsible for processing payments can now return payment method details`, which will be associated with the corresponding transaction. See [docs](https://docs.saleor.io/developer/extending/webhooks/synchronous-events/transaction#response-4) to learn more.

@@ -9,6 +9,7 @@ import graphene
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.db import transaction
+from django.db.models import F
 
 from ..account.models import User
 from ..app.models import App
@@ -21,7 +22,7 @@ from ..core.utils.events import (
     webhook_async_event_requires_sync_webhooks_to_trigger,
 )
 from ..giftcard import GiftCardLineData
-from ..order.utils import order_lines_qs_select_for_update
+from ..order.lock_objects import order_lines_qs_select_for_update
 from ..payment import (
     ChargeStatus,
     CustomPaymentChoices,
@@ -296,6 +297,10 @@ def order_created(
             order_id,
             extra={"tax_error": order.tax_error, "order_id": order_id},
         )
+
+    if order_user := order.user:
+        order_user.number_of_orders = F("number_of_orders") + 1
+        order_user.save(update_fields=["number_of_orders"])
 
     events.order_created_event(
         order=order, user=user, app=app, from_draft=from_draft, automatic=automatic
