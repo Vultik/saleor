@@ -1022,73 +1022,6 @@ def test_order_filter_is_click_and_collect_none(
     assert len(returned_orders) == 0
 
 
-@freeze_time("2021-11-01 12:00:01")
-def test_order_filter_is_preorder_true(
-    staff_api_client,
-    permission_group_manage_orders,
-    preorders,
-):
-    # given
-    permission_group_manage_orders.user_set.add(staff_api_client.user)
-    variables = {"where": {"isPreorder": True}}
-
-    # when
-    response = staff_api_client.post_graphql(ORDERS_WHERE_QUERY, variables)
-
-    # then
-    content = get_graphql_content(response)
-    returned_orders = content["data"]["orders"]["edges"]
-    assert len(returned_orders) == len(preorders)
-    assert {order["node"]["id"] for order in returned_orders} == {
-        graphene.Node.to_global_id("Order", order.pk) for order in preorders
-    }
-
-
-@freeze_time("2021-11-01 12:00:01")
-def test_order_filter_is_preorder_false(
-    staff_api_client,
-    permission_group_manage_orders,
-    preorders,
-):
-    # given
-    permission_group_manage_orders.user_set.add(staff_api_client.user)
-    variables = {"where": {"isPreorder": False}}
-
-    # when
-    response = staff_api_client.post_graphql(ORDERS_WHERE_QUERY, variables)
-
-    # then
-    content = get_graphql_content(response)
-    returned_orders = content["data"]["orders"]["edges"]
-    expected_orders = Order.objects.exclude(
-        id__in=[preorder.id for preorder in preorders]
-    ).exclude(status=OrderStatus.DRAFT)
-    expected_ids = {
-        graphene.Node.to_global_id("Order", order.pk) for order in expected_orders
-    }
-    returned_ids = {order["node"]["id"] for order in returned_orders}
-    assert returned_ids == expected_ids
-
-
-@freeze_time("2021-11-01 12:00:01")
-def test_order_filter_is_preorder_none(
-    staff_api_client,
-    permission_group_manage_orders,
-    preorders,
-):
-    # given
-    permission_group_manage_orders.user_set.add(staff_api_client.user)
-    variables = {"where": {"isPreorder": None}}
-
-    # when
-    response = staff_api_client.post_graphql(ORDERS_WHERE_QUERY, variables)
-
-    # then
-    content = get_graphql_content(response)
-    returned_orders = content["data"]["orders"]["edges"]
-    assert len(returned_orders) == 0
-
-
 def test_order_filter_gift_card_used_true(
     staff_api_client,
     permission_group_manage_orders,
@@ -2513,6 +2446,66 @@ def test_orders_filter_by_transaction_payment_details(
     assert len(orders) == len(indexes)
     numbers = {node["node"]["number"] for node in orders}
     assert numbers == {str(order_list[index].number) for index in indexes}
+
+
+@pytest.mark.parametrize(
+    ("metadata", "expected_indexes"),
+    [
+        ({"key": "foo"}, [0, 1]),
+        ({"key": "foo", "value": {"eq": "bar"}}, [0]),
+        ({"key": "foo", "value": {"eq": "baz"}}, []),
+        ({"key": "foo", "value": {"oneOf": ["bar", "zaz"]}}, [0, 1]),
+        ({"key": "notfound"}, []),
+        ({"key": "foo", "value": {"eq": None}}, []),
+        ({"key": "foo", "value": {"oneOf": []}}, []),
+        (None, []),
+    ],
+)
+def test_orders_filter_by_transaction_metadata(
+    metadata,
+    expected_indexes,
+    order_list,
+    staff_api_client,
+    permission_group_manage_orders,
+    transaction_item_generator,
+):
+    # given
+    transaction_item_generator(
+        order_id=order_list[0].pk,
+        charged_value=order_list[0].total.gross.amount,
+        metadata={"foo": "bar"},
+    )
+
+    transaction_item_generator(
+        order_id=order_list[0].pk,
+        charged_value=order_list[0].total.gross.amount,
+        metadata={},
+    )
+
+    transaction_item_generator(
+        order_id=order_list[1].pk,
+        charged_value=order_list[1].total.gross.amount,
+        metadata={"foo": "zaz"},
+    )
+
+    transaction_item_generator(
+        order_id=order_list[2].pk,
+        charged_value=order_list[2].total.gross.amount,
+        metadata={},
+    )
+
+    permission_group_manage_orders.user_set.add(staff_api_client.user)
+    variables = {"where": {"transactions": {"metadata": metadata}}}
+
+    # when
+    response = staff_api_client.post_graphql(ORDERS_WHERE_QUERY, variables)
+
+    # then
+    content = get_graphql_content(response)
+    orders = content["data"]["orders"]["edges"]
+    assert len(orders) == len(expected_indexes)
+    numbers = {node["node"]["number"] for node in orders}
+    assert numbers == {str(order_list[i].number) for i in expected_indexes}
 
 
 @pytest.mark.parametrize(

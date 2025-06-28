@@ -13061,9 +13061,6 @@ input OrderWhereInput @doc(category: "Orders") {
   """
   isClickAndCollect: Boolean
 
-  """Filter by whether the order contains preorder items."""
-  isPreorder: Boolean
-
   """Filter based on whether a gift card was used in the order."""
   isGiftCardUsed: Boolean
 
@@ -13201,6 +13198,9 @@ input LinesFilterInput @doc(category: "Orders") {
 input TransactionFilterInput @doc(category: "Orders") {
   """Filter by payment method details used to pay for the order."""
   paymentMethodDetails: PaymentMethodDetailsFilterInput
+
+  """Filter by metadata fields of transactions."""
+  metadata: MetadataFilterInput
 }
 
 input PaymentMethodDetailsFilterInput {
@@ -14509,6 +14509,12 @@ input CustomerWhereInput @doc(category: "Users") {
   """Filter by email address."""
   email: StringFilterInput
 
+  """Filter by first name."""
+  firstName: StringFilterInput
+
+  """Filter by last name."""
+  lastName: StringFilterInput
+
   """Filter by whether the user is active."""
   isActive: Boolean
 
@@ -14523,6 +14529,9 @@ input CustomerWhereInput @doc(category: "Users") {
 
   """Filter by addresses data associated with user."""
   addresses: AddressFilterInput
+
+  """Filter by number of orders placed by the user."""
+  numberOfOrders: IntFilterInput
 
   """List of conditions that must be met."""
   AND: [CustomerWhereInput!]

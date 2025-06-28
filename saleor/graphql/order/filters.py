@@ -510,6 +510,9 @@ class TransactionFilterInput(BaseInputObjectType):
     payment_method_details = PaymentMethodDetailsFilterInput(
         description="Filter by payment method details used to pay for the order.",
     )
+    metadata = MetadataFilterInput(
+        description="Filter by metadata fields of transactions."
+    )
 
     class Meta:
         doc_category = DOC_CATEGORY_ORDERS
@@ -525,6 +528,16 @@ class TransactionFilterInput(BaseInputObjectType):
         if filter_value := value.get("type"):
             return PaymentMethodDetailsFilterInput.filter_type(qs, _, filter_value)
         return qs.none()
+
+    @staticmethod
+    def filter_metadata(qs, _, value):
+        if value is None:
+            return qs.none()
+
+        transaction_qs = filter_where_metadata(
+            TransactionItem.objects.using(qs.db), None, value
+        )
+        return qs.filter(Exists(transaction_qs.filter(order_id=OuterRef("id"))))
 
 
 class OrderWhere(MetadataWhereBase):
@@ -587,10 +600,6 @@ class OrderWhere(MetadataWhereBase):
     is_click_and_collect = BooleanWhereFilter(
         method="filter_is_click_and_collect",
         help_text="Filter by whether the order uses the click and collect delivery method.",
-    )
-    is_preorder = BooleanWhereFilter(
-        method="filter_is_preorder",
-        help_text="Filter by whether the order contains preorder items.",
     )
     is_gift_card_used = BooleanWhereFilter(
         method="filter_is_gift_card_used",
@@ -722,12 +731,6 @@ class OrderWhere(MetadataWhereBase):
         return filter_is_click_and_collect(qs, _, value)
 
     @staticmethod
-    def filter_is_preorder(qs, _, value):
-        if value is None:
-            return qs.none()
-        return filter_is_preorder(qs, _, value)
-
-    @staticmethod
     def filter_is_gift_card_used(qs, _, value):
         if value is None:
             return qs.none()
@@ -785,11 +788,20 @@ class OrderWhere(MetadataWhereBase):
     def filter_transactions(qs, _, value):
         if value is None:
             return qs.none()
-        if filter_value := value.get("payment_method_details"):
-            return TransactionFilterInput.filter_payment_method_details(
-                qs, _, filter_value
+
+        metadata_value = value.get("metadata")
+        payment_method_details_value = value.get("payment_method_details")
+
+        if not any([metadata_value, payment_method_details_value]):
+            return qs.none()
+
+        if payment_method_details_value:
+            qs = TransactionFilterInput.filter_payment_method_details(
+                qs, _, payment_method_details_value
             )
-        return qs.none()
+        if metadata_value:
+            qs = TransactionFilterInput.filter_metadata(qs, _, metadata_value)
+        return qs
 
     @staticmethod
     def filter_total_gross(qs, _, value):
