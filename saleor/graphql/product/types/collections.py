@@ -12,21 +12,24 @@ from ....thumbnail.utils import (
     get_thumbnail_format,
     get_thumbnail_size,
 )
-from ...channel import ChannelContext, ChannelQsContext
 from ...channel.dataloaders import ChannelBySlugLoader
-from ...channel.types import ChannelContextType
 from ...core import ResolveInfo
 from ...core.connection import (
     CountableConnection,
     create_connection_slice,
     filter_connection_queryset,
 )
-from ...core.context import get_database_connection_name
+from ...core.context import (
+    ChannelContext,
+    ChannelQsContext,
+    get_database_connection_name,
+)
 from ...core.descriptions import DEPRECATED_IN_3X_INPUT, RICH_CONTENT
 from ...core.doc_category import DOC_CATEGORY_PRODUCTS
 from ...core.federation import federated_entity
 from ...core.fields import FilterConnectionField, JSONString, PermissionsField
 from ...core.types import Image, NonNullList, ThumbnailField
+from ...core.types.context import ChannelContextType
 from ...core.utils import from_global_id_or_error
 from ...meta.types import ObjectWithMetadata
 from ...translations.fields import TranslationField
