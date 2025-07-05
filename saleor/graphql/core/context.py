@@ -1,10 +1,9 @@
 import datetime
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from django.conf import settings
 from django.db.models import QuerySet
-from django.db.models.base import Model
 from django.http import HttpRequest
 from django.utils.functional import empty
 
@@ -72,7 +71,7 @@ N = TypeVar("N")
 
 
 @dataclass
-class BaseContext(Generic[N]):
+class BaseContext[N]:
     node: N
 
 
@@ -85,11 +84,8 @@ class SyncWebhookControlContext(BaseContext[N]):
         self.allow_sync_webhooks = allow_sync_webhooks
 
 
-C = TypeVar("C", bound=Model)
-
-
 @dataclass
-class ChannelContext(BaseContext[C]):
+class ChannelContext(BaseContext[N]):
     channel_slug: str | None
 
 

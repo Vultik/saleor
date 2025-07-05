@@ -2,6 +2,7 @@ import graphene
 from django.core.exceptions import ValidationError
 from graphql.error.base import GraphQLError
 
+from ....attribute import models as attribute_models
 from ....checkout import models as checkout_models
 from ....core import models
 from ....core.db.connection import allow_writer
@@ -11,6 +12,7 @@ from ....discount import models as discount_models
 from ....discount.models import Promotion
 from ....menu import models as menu_models
 from ....order import models as order_models
+from ....page import models as page_models
 from ....product import models as product_models
 from ....shipping import models as shipping_models
 from ...core import ResolveInfo
@@ -32,7 +34,7 @@ class BaseMetadataMutation(BaseMutation):
         abstract = True
 
     @classmethod
-    def __init_subclass_with_meta__(
+    def __init_subclass_with_meta__(  # type: ignore[override]
         cls,
         arguments=None,
         permission_map=None,
@@ -151,7 +153,7 @@ class BaseMetadataMutation(BaseMutation):
         return graphene_type._meta.model
 
     @classmethod
-    def check_permissions(cls, context, permissions=None, **data):
+    def check_permissions(cls, context, permissions=None, **data):  # type: ignore[override]
         is_app = bool(getattr(context, "app", None))
         if is_app and permissions and AccountPermissions.MANAGE_STAFF in permissions:
             raise PermissionDenied(
@@ -256,8 +258,12 @@ class BaseMetadataMutation(BaseMutation):
             | product_models.Product
             | product_models.ProductVariant
             | shipping_models.ShippingMethod
-            | shipping_models.ShippingZone,
+            | shipping_models.ShippingZone
+            | attribute_models.Attribute
+            | attribute_models.AttributeValue
+            | page_models.Page,
         )
+
         use_channel_context = use_channel_context or (
             # For old sales migrated into promotions
             isinstance(instance, Promotion) and instance.old_sale_id

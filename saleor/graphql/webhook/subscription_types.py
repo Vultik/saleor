@@ -360,7 +360,7 @@ class AttributeBase(AbstractType):
     @staticmethod
     def resolve_attribute(root, _info: ResolveInfo):
         _, attribute = root
-        return attribute
+        return ChannelContext(attribute, None)
 
 
 class AttributeCreated(SubscriptionObjectType, AttributeBase):
@@ -395,8 +395,8 @@ class AttributeValueBase(AbstractType):
 
     @staticmethod
     def resolve_attribute_value(root, _info: ResolveInfo):
-        _, attribute = root
-        return attribute
+        _, attribute_value = root
+        return ChannelContext(attribute_value, None)
 
 
 class AttributeValueCreated(SubscriptionObjectType, AttributeValueBase):
@@ -1530,7 +1530,7 @@ class PageBase(AbstractType):
     @staticmethod
     def resolve_page(root, _info: ResolveInfo):
         _, page = root
-        return page
+        return ChannelContext(page, channel_slug=None)
 
 
 class PageCreated(SubscriptionObjectType, PageBase):
