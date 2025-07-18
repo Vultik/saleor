@@ -86,6 +86,8 @@ All notable, unreleased changes to this project will be documented in this file.
 - Filtering products by `category` now also includes subcategories. The filter will return products that belong to the specified categories as well as their subcategories.
 - Deprecated `Transaction.gatewayResponse` field. Please migrate to Transaction API and Apps.
 - Extend the `Attribute` type with a `values` field, allowing you to retrieve all values assigned to a specific attribute.
+- Add new `single-reference` attribute. You can now create a reference attribute that points to only one object (unlike the existing `reference` type, which supports multiple references).
+Like `reference`, the `single-reference` type can target entities defined in the `AttributeEntityTypeEnum`.
 
 ### Webhooks
 - Transaction webhooks responsible for processing payments can now return payment method details`, which will be associated with the corresponding transaction. See [docs](https://docs.saleor.io/developer/extending/webhooks/synchronous-events/transaction#response-4) to learn more.
@@ -123,3 +125,16 @@ All notable, unreleased changes to this project will be documented in this file.
 - Fixed bug when not-authenticated staff user couldn't fetch `appExtension.app` without `MANAGE_APPS`. Now apps access is available by staff users and the app itself (for app and extension it owns)
 
 - Fixed bug in user email filtering to make it case-insensitive.
+
+### Deprecations
+
+Following plugins are now marked as deprecated:
+
+- Braintree (`mirumee.payments.braintree`)
+- Razorpay (`mirumme.payments.razorpay`)
+- Sendgrid (`mirumee.notifications.sendgrid_email`)
+- Dummy (`mirumee.payments.dummy`)
+- DummyCreditCard (`mirumee.payments.dummy_credit_card`)
+- Avalara (`mirumee.taxes.avalara`)
+
+We plan to remove deprecated plugins in the future versions of Saleor. We recommend you use [Saleor apps](https://apps.saleor.io/) instead.
