@@ -5,7 +5,6 @@ All notable, unreleased changes to this project will be documented in this file.
 # 3.22.0 [Unreleased]
 
 ### Breaking changes
-- Increased query cost for attribute-related operations due to the addition of `AttributeValue.referencedObject`.
 
 ### GraphQL API
 - You can now filter and search orders using the new `where` and `search` fields on the `pages` query.
@@ -30,6 +29,7 @@ All notable, unreleased changes to this project will be documented in this file.
     - Filter by associated payment method name and type.
     - Filter by associated billing and shipping address phone number and country code.
     - Filter by associated transactionItems metadata.
+    - Filter by warehouse used to fulfill the order.
 - You can now filter and search orders using the new `where` and `search` fields on the `orders` query.
   - Use `where` to define complex conditions with `AND`/`OR` logic and operators like `eq`, `oneOf`, `range`.
   - Use `search` to perform full-text search across relevant fields.
@@ -79,11 +79,9 @@ All notable, unreleased changes to this project will be documented in this file.
   - `collection.products`
   - `pageType.availableAttributes`
 - Extend `AttributeEntityType` with `CATEGORY` and `COLLECTION`. You can now assign category and collection as a attribute reference.
-- Attribute values now expose the `referencedObject`, allowing for easier access to the linked entity.
 - You can now filter and search attribute choices using the new `where` and `search` fields on the `attribute.choices` query.
 - Filtering products by `category` now also includes subcategories. The filter will return products that belong to the specified categories as well as their subcategories.
 - Deprecated `Transaction.gatewayResponse` field. Please migrate to Transaction API and Apps.
-- Extend the `Attribute` type with a `values` field, allowing you to retrieve all values assigned to a specific attribute.
 - Add new `single-reference` attribute. You can now create a reference attribute that points to only one object (unlike the existing `reference` type, which supports multiple references).
 Like `reference`, the `single-reference` type can target entities defined in the `AttributeEntityTypeEnum`.
 - Extended support for filtering `products` by associated attributes
