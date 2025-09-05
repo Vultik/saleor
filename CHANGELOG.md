@@ -94,6 +94,10 @@ Like `reference`, the `single-reference` type can target entities defined in the
   - Added support for filtering by associated reference objects (e.g., `products`, `pages`, `variants`)
 - Added `fractionalAmount` and `fractionDigits` fields to the `Money` type. These fields allow monetary values to be represented as a pair of integers, which is often required when integrating with payment service providers.
 - Add support for filtering `productVariants` by associated attributes
+- You can now use the `AssignedAttribute` interface and the `assignedAttribute`, `assignedAttributes` fields on `Page`, `Product`, and `ProductVariant` to fetch assigned attributes and their values in a cleaner, more focused shape.
+  - `attribute` and `attributes` fields on Page, Product, and ProductVariant are deprecated.
+
+
 
 ### Webhooks
 - Transaction webhooks responsible for processing payments can now return payment method details`, which will be associated with the corresponding transaction. See [docs](https://docs.saleor.io/developer/extending/webhooks/synchronous-events/transaction#response-4) to learn more.
@@ -135,6 +139,8 @@ Like `reference`, the `single-reference` type can target entities defined in the
 - Checkouts having total gross amount equal to 0 will get their authorization statuses updated to `CheckoutAuthorizeStatus.FULL` upon fetching checkout data.
 
 - Fixed a bug that could prevent rich text attributes written in scripts using combining diacritical marks (for example, Arabic) from being saved properly.
+
+- Fixed a bug where a Checkout partially paid by Transaction(s) and partially paid by Gift Card(s) could not be completed due to `CHECKOUT_NOT_FULLY_PAID` error. Checkout authorize and charge statuses are now recalculcated more reliably. Status calculcation is now taking into account available gift cards balance.
 
 ### Deprecations
 
