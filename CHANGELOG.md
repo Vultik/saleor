@@ -6,6 +6,7 @@ All notable, unreleased changes to this project will be documented in this file.
 
 ### Breaking changes
 
+- Made `refundSettings` field on `RefundSettingsUpdate` mutation nullable to correctly reflect that it can be `null` when errors occur.
 - Fix missing denormalization of shipping methods metadata when creating an order.
   - Shipping method metadata is now copied to dedicated order fields (`shipping_method_metadata` and `shipping_method_private_metadata`) during checkout-to-order conversion. This ensures that order metadata remains consistent even if the original shipping method is modified or deleted. As a result, updates made to a shipping method's metadata after order creation will no longer be reflected in the order's `shippingMethod.metadata` field.
   - Shipping method metadata is now also denormalized during draft order finalization, ensuring consistent behavior across all order creation flows.
@@ -28,6 +29,7 @@ All notable, unreleased changes to this project will be documented in this file.
 
   Important: digital products are still fully supported in Saleor. Only the legacy,
   undocumented digital content API has been removed, the supported approach is documented here: https://docs.saleor.io/recipes/digital-products
+- Product media images from external URLs are now fetched asynchronously via background tasks in `productMediaCreate` and `productBulkCreate` mutations, improving response times. During download, the API returns HTTP 503 for the media image.
 
 ### GraphQL API
 
@@ -60,7 +62,24 @@ permissions.
    See the [upgrading guide](https://docs.saleor.io/upgrade-guides/3-22-to-3-23##explicit-delivery-options-calculation) to learn more.
   - `checkoutDeliveryMethodUpdate` mutation now accepts `CheckoutDelivery` ID as `deliveryMethodId` (ID returned by `deliveryOptionsCalculate` mutation). Usage of `ShippingMethod` ID is deprecated in favor of `CheckoutDelivery` ID.
 
+### EditorJS (Rich Text Editor)
 
+- Made the EditorJS parser stricter. We no longer accept unknown/extra fields. - #18969 by @NyanKiyoshi
+- Removed the following deprecated behaviors:
+
+  - `EDITOR_JS_LINK_REL` configuration behavior has changed.
+    Links rendered by EditorJS (`<a href="..." rel="...">`) now default to
+    `rel="noopener noreferrer"` instead of an empty value.
+    Learn more in the [documentation][EDITOR_JS_LINK_REL].
+  - `UNSAFE_EDITOR_JS_ALLOWED_URL_SCHEMES` has been removed.
+    It's no longer possible to extend the list of allowed URL schemes via settings.
+
+    If you require support for additional URL schemes, open a request:
+    https://github.com/saleor/saleor/issues
+
+  (Via #18976 by @NyanKiyoshi)
+
+[EDITOR_JS_LINK_REL]: https://docs.saleor.io/setup/configuration#editor_js_link_rel
 
 ### Other changes
 
