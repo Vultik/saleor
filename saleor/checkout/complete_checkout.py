@@ -41,6 +41,7 @@ from ..graphql.checkout.utils import (
     prepare_insufficient_stock_checkout_validation_error,
 )
 from ..order import OrderOrigin, OrderStatus
+from ..order import delivery_context as order_delivery_context
 from ..order.actions import order_created
 from ..order.fetch import OrderInfo, OrderLineInfo
 from ..order.models import Order, OrderLine
@@ -80,7 +81,6 @@ from .checkout_cleaner import (
     clean_checkout_payment,
     clean_checkout_shipping,
 )
-from .delivery_context import PRIVATE_META_APP_SHIPPING_ID
 from .fetch import (
     CheckoutInfo,
     CheckoutLineInfo,
@@ -219,7 +219,7 @@ def _process_shipping_data_for_order(
         # method.
         checkout_metadata = get_or_create_checkout_metadata(checkout_info.checkout)
         checkout_metadata.store_value_in_private_metadata(
-            {PRIVATE_META_APP_SHIPPING_ID: shipping_method.id}
+            {order_delivery_context.PRIVATE_META_APP_SHIPPING_ID: shipping_method.id}
         )
         checkout_metadata.save()
 
@@ -836,6 +836,7 @@ def _create_order(
         order_lines_info,
         country_code,
         checkout_info.channel,
+        site_settings,
         app or user,
         calculate_stocks_with_shipping_zones=site_settings.use_legacy_shipping_zone_stock_availability,
         collection_point_pk=checkout_info.get_delivery_method_info().warehouse_pk,
@@ -1265,6 +1266,7 @@ def _handle_allocations_of_order_lines(
     checkout_info: CheckoutInfo,
     checkout_lines: list[CheckoutLineInfo],
     order_lines_info: list[OrderLineInfo],
+    site_settings: "SiteSettings",
     requestor: "App | User | None",
     reservation_enabled: bool,
     calculate_stocks_with_shipping_zones: bool,
@@ -1277,6 +1279,7 @@ def _handle_allocations_of_order_lines(
         order_lines_info,
         country_code,
         checkout_info.channel,
+        site_settings,
         requestor,
         calculate_stocks_with_shipping_zones=calculate_stocks_with_shipping_zones,
         collection_point_pk=checkout_info.get_delivery_method_info().warehouse_pk,
@@ -1512,6 +1515,7 @@ def _create_order_from_checkout(
         checkout_info=checkout_info,
         checkout_lines=checkout_lines_info,
         order_lines_info=order_lines_info,
+        site_settings=site_settings,
         requestor=app or user,
         reservation_enabled=reservation_enabled,
         calculate_stocks_with_shipping_zones=site_settings.use_legacy_shipping_zone_stock_availability,
