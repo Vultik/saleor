@@ -9,6 +9,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Removed the deprecated Authorize.Net payment gateway plugin (`mirumee.payments.authorize_net`).
 - Removed the deprecated Razorpay payment gateway plugin (`mirumee.payments.razorpay`).
 - Removed the deprecated Braintree payment gateway plugin (`mirumee.payments.braintree`).
+- Removed the deprecated Dummy (`mirumee.payments.dummy`) and Dummy Credit Card (`mirumee.payments.dummy_credit_card`) payment gateway plugins.
 - Apps will be no longer to be granted with `MANAGE_APPS` permission. In certain cases, this permission was able to be assigned by the authorized user.
   App with such permission was not able to *act* like an admin app, but permission technically was granted.
 
@@ -31,6 +32,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Removed the deprecated `variant` field from the `Product` type. Use the top-level `variant` query instead.
 - Removed the deprecated `note` field from the `Checkout` type. Use `customerNote` instead.
 - Removed the deprecated `isDigital` field from the `ProductType` type, the `isDigital` input from `ProductTypeInput`, the `DIGITAL` value from the `ProductTypeEnum` filter, and the `DIGITAL` value from `ProductTypeSortField`. These had no effect; use metadata or attributes instead (or `SHIPPING_REQUIRED` for sorting).
+- Fixed `productVariantBulkUpdate` returning a 500 error when `channelListings.create` targeted a channel the variant was already listed in. The mutation now returns a `DUPLICATED_INPUT_ITEM` error recommending the `update` field, and respects the selected `errorPolicy` - #19355 by @ayesha-waris
 
 ### Webhooks
 
@@ -43,5 +45,9 @@ All notable, unreleased changes to this project will be documented in this file.
 - Removed the `is_digital` field from the `populatedb` sample data.
 
 #### Search improvements
+
+### Fixes
+
+- Fixed `appCreate` and `appUpdate` failing with an unhandled error when `permissions` was `null` or omitted. `appCreate` now creates an app with no permissions, and `appUpdate` leaves the app's existing permissions untouched. Passing an empty list to `appUpdate` still clears them.
 
 ### Deprecations
